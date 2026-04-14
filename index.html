@@ -349,6 +349,85 @@
     @media(min-width:520px) {
       .category-grid { grid-template-columns:1fr 1fr 1fr; }
     }
+
+    /* ─── PLAYER SELECT SCREEN ─────────────────────── */
+    .player-select-header {
+      text-align:center; margin-bottom:6px;
+    }
+    .player-select-title {
+      font-size:clamp(13px,3.5vw,15px); color:var(--text-muted); line-height:1.5;
+    }
+    .player-select-progress {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      margin:14px 0 20px;
+    }
+    .psp-bar {
+      flex:1; max-width:200px; height:6px; background:var(--surface2); border-radius:3px; overflow:hidden;
+    }
+    .psp-fill {
+      height:100%; border-radius:3px; background:var(--gradient-btn);
+      transition:width 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .psp-text { font-size:13px; color:var(--text-muted); font-weight:600; white-space:nowrap; }
+
+    .player-list { display:flex; flex-direction:column; gap:10px; }
+
+    .player-list-item {
+      display:flex; align-items:center; gap:14px;
+      background:var(--card-bg); border:2px solid var(--card-border);
+      border-radius:18px; padding:14px 16px;
+      cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
+      min-height:72px;
+    }
+    .player-list-item:active { transform:scale(0.97); }
+    .player-list-item.viewed {
+      border-color:rgba(16,185,129,0.4);
+      background:rgba(16,185,129,0.06);
+      cursor:default;
+    }
+    .player-list-item.pending:hover {
+      border-color:rgba(124,58,237,0.5);
+      background:rgba(124,58,237,0.1);
+      transform:translateY(-1px);
+      box-shadow:0 6px 20px rgba(124,58,237,0.2);
+    }
+    .player-list-item.pending::after {
+      content:'';
+      position:absolute; inset:0;
+      background:var(--gradient-btn);
+      opacity:0;
+      transition:opacity 0.2s;
+    }
+    .player-list-item.pending:active::after { opacity:0.05; }
+
+    .pli-avatar {
+      width:46px; height:46px; border-radius:13px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; flex-shrink:0;
+    }
+    .pli-name {
+      flex:1; font-size:clamp(15px,4.2vw,17px); font-weight:700; min-width:0;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .pli-status {
+      flex-shrink:0; display:flex; align-items:center; gap:6px;
+      font-size:clamp(12px,3.2vw,13px); font-weight:600;
+    }
+    .pli-status.done  { color:var(--civil-color); }
+    .pli-status.tap   { color:rgba(124,58,237,0.9); }
+    .pli-status-icon  { font-size:16px; }
+
+    .all-ready-banner {
+      background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(5,150,105,0.1));
+      border:1.5px solid rgba(16,185,129,0.4); border-radius:16px;
+      padding:14px 16px; display:flex; align-items:center; gap:12px;
+      animation:popIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+      margin-top:4px;
+    }
+    .arb-icon  { font-size:26px; }
+    .arb-text  { flex:1; }
+    .arb-title { font-size:14px; font-weight:700; color:var(--civil-color); }
+    .arb-sub   { font-size:12px; color:rgba(16,185,129,0.7); margin-top:2px; }
   </style>
 </head>
 <body>
@@ -412,7 +491,8 @@ let S = {
   randomMode: false,
   customCategories: [],
   assignedRoles: [],
-  currentDistributionIndex: 0,
+  viewedPlayers: [],      // array of player indices who already saw their role
+  activeRevealIndex: null, // which player is currently on the reveal screen
   revealState: 'hidden',
   modalOpen: false,
   modalMode: null,
@@ -498,7 +578,7 @@ function assignRoles() {
 // ══════════════════════════════════════════════════
 function render() {
   const app = document.getElementById('app');
-  const screens = { home:renderHome, setup:renderSetup, category:renderCategory, distribution:renderDistribution, reveal:renderReveal, playing:renderPlaying };
+  const screens = { home:renderHome, setup:renderSetup, category:renderCategory, playerSelect:renderPlayerSelect, reveal:renderReveal, playing:renderPlaying };
   app.innerHTML = (screens[S.screen] || renderHome)();
   if (S.modalOpen) app.insertAdjacentHTML('beforeend', renderModal());
   attachEvents();
@@ -661,40 +741,73 @@ function renderCategory() {
   </div>`;
 }
 
-// ─── DISTRIBUTION ───────────────────────────────
-function renderDistribution() {
-  const idx = S.currentDistributionIndex;
-  const name = playerName(idx);
-  const color = playerColor(idx);
-  const emoji = playerEmoji(idx);
-  const dots = Array.from({length:S.playerCount},(_,i)=>`<div class="progress-dot${i<idx?' done':i===idx?' current':''}"></div>`).join('');
+// ─── PLAYER SELECT ──────────────────────────────
+function renderPlayerSelect() {
+  const viewed = S.viewedPlayers.length;
+  const total  = S.playerCount;
+  const allDone = viewed === total;
+  const pct = Math.round((viewed / total) * 100);
+
+  const listHTML = Array.from({length: total}, (_, i) => {
+    const isDone = S.viewedPlayers.includes(i);
+    const name   = playerName(i);
+    const color  = playerColor(i);
+    const emoji  = playerEmoji(i);
+    return `
+      <div class="player-list-item ${isDone ? 'viewed' : 'pending'}" ${isDone ? '' : `data-reveal="${i}"`}>
+        <div class="pli-avatar" style="background:${color}22;color:${color}">${emoji}</div>
+        <div class="pli-name">${escape(name)}</div>
+        <div class="pli-status ${isDone ? 'done' : 'tap'}">
+          ${isDone
+            ? `<span class="pli-status-icon">✅</span> Listo`
+            : `<span class="pli-status-icon">👆</span> Tocar`}
+        </div>
+      </div>`;
+  }).join('');
+
   return `<div class="screen">
     <div class="screen-header">
       <button class="back-btn" id="btn-back">←</button>
-      <div class="screen-title">Reparto</div>
-      <div style="font-size:14px;color:var(--text-muted)">${idx+1}/${S.playerCount}</div>
+      <div class="screen-title">Ver roles</div>
     </div>
-    <div class="distribution-screen">
-      <div class="distribution-avatar" style="background:${color}22;color:${color}">${emoji}</div>
-      <div class="distribution-name" style="color:${color}">${escape(name)}</div>
-      <div class="distribution-prompt">Pasá el teléfono a <strong>${escape(name)}</strong><br>cuando nadie más esté mirando</div>
-      <div class="tap-zone" id="btn-tap">
-        <div class="tap-zone-icon">👁️</div>
-        <div class="tap-zone-text">Tocar para ver rol</div>
+
+    <div class="player-select-header">
+      <div class="player-select-title">Cada jugador toca su nombre para ver su rol en privado</div>
+      <div class="player-select-progress">
+        <div class="psp-bar"><div class="psp-fill" style="width:${pct}%"></div></div>
+        <div class="psp-text">${viewed}/${total} listos</div>
       </div>
-      <div class="progress-dots">${dots}</div>
+    </div>
+
+    <div class="player-list">${listHTML}</div>
+
+    ${allDone ? `
+      <div class="all-ready-banner mt-12">
+        <div class="arb-icon">🎉</div>
+        <div class="arb-text">
+          <div class="arb-title">¡Todos vieron su rol!</div>
+          <div class="arb-sub">Ya podés empezar la partida</div>
+        </div>
+      </div>` : ''}
+
+    <div class="flex-col mt-16">
+      <button class="btn btn-primary" id="btn-start-game" ${!allDone ? 'disabled' : ''}>
+        🎮 ¡A jugar!
+      </button>
+      ${!allDone ? `<div style="text-align:center;font-size:12px;color:var(--text-muted)">Faltan ${total - viewed} jugador${total - viewed !== 1 ? 'es' : ''} por ver su rol</div>` : ''}
     </div>
   </div>`;
 }
 
 // ─── REVEAL ────────────────────────────────────
 function renderReveal() {
-  const idx = S.currentDistributionIndex;
+  const idx  = S.activeRevealIndex;
   const role = S.assignedRoles[idx];
   const name = playerName(idx);
-  const isLast = idx === S.playerCount-1;
   const isCivil = role.role === 'civil';
-  const cat = catById(role.categoryId);
+  const cat  = catById(role.categoryId);
+  const color = playerColor(idx);
+  const emoji = playerEmoji(idx);
 
   if (S.revealState === 'hidden') {
     return `<div class="screen">
@@ -702,8 +815,8 @@ function renderReveal() {
         <div class="screen-title" style="text-align:center;flex:1">🔒 Pantalla oculta</div>
       </div>
       <div class="hidden-role-screen" id="btn-show-role">
-        <div class="hidden-role-icon">🙈</div>
-        <div class="distribution-name">${escape(name)}</div>
+        <div class="pli-avatar" style="width:72px;height:72px;border-radius:20px;font-size:34px;margin:0 auto;background:${color}22;color:${color};display:flex;align-items:center;justify-content:center">${emoji}</div>
+        <div class="distribution-name" style="color:${color}">${escape(name)}</div>
         <div style="font-size:clamp(14px,4vw,16px);color:var(--text-muted)">Tocá para ver tu rol</div>
         <div class="hidden-role-warning">Asegurate de que nadie más esté mirando</div>
       </div>
@@ -742,13 +855,15 @@ function renderReveal() {
       <div class="screen-title" style="flex:1">Tu rol secreto</div>
     </div>
     <div class="reveal-screen">
-      <div class="reveal-player-name">👤 ${escape(name)}</div>
+      <div class="reveal-player-name">
+        <span style="color:${color}">${emoji} ${escape(name)}</span>
+      </div>
       ${roleCard}
       <div class="reveal-hint">
         ${isCivil ? 'Recordá la palabra. ¡Hablá sobre ella sin decirla y descubrí al impostor!' : 'Fingí conocer la palabra sin delatarte. ¡No te descubran!'}
       </div>
       <button class="btn btn-primary" id="btn-done">
-        ${isLast ? '🎮 ¡A jugar!' : '➡️ Listo, pasar al siguiente'}
+        ✅ Listo, volver a la lista
       </button>
     </div>
   </div>`;
@@ -894,22 +1009,35 @@ function attachEvents() {
     on('btn-start','click',()=>{
       if(!S.randomMode && S.selectedCategoryIds.length===0) return;
       assignRoles();
-      S.currentDistributionIndex=0; S.revealState='hidden'; S.screen='distribution'; render();
+      S.viewedPlayers=[]; S.activeRevealIndex=null; S.revealState='hidden'; S.screen='playerSelect'; render();
     });
   }
 
-  // DISTRIBUTION
-  if (S.screen==='distribution') {
+  // PLAYER SELECT
+  if (S.screen==='playerSelect') {
     on('btn-back','click',()=>{ S.screen='category'; render(); });
-    on('btn-tap','click',()=>{ S.revealState='hidden'; S.screen='reveal'; render(); });
+    on('btn-start-game','click',()=>{
+      if(S.viewedPlayers.length===S.playerCount){ S.screen='playing'; render(); }
+    });
+    document.querySelectorAll('[data-reveal]').forEach(el=>{
+      el.addEventListener('click',()=>{
+        S.activeRevealIndex = +el.dataset.reveal;
+        S.revealState = 'hidden';
+        S.screen = 'reveal';
+        render();
+      });
+    });
   }
 
   // REVEAL
   if (S.screen==='reveal') {
     on('btn-show-role','click',()=>{ S.revealState='showing'; render(); });
     on('btn-done','click',()=>{
-      if(S.currentDistributionIndex===S.playerCount-1){ S.screen='playing'; render(); }
-      else { S.currentDistributionIndex++; S.revealState='hidden'; S.screen='distribution'; render(); }
+      // Mark this player as having viewed their role
+      if (!S.viewedPlayers.includes(S.activeRevealIndex)) {
+        S.viewedPlayers.push(S.activeRevealIndex);
+      }
+      S.revealState='hidden'; S.screen='playerSelect'; render();
     });
   }
 
@@ -919,7 +1047,7 @@ function attachEvents() {
       const r=S.assignedRoles[0]; const cat=catById(r?.categoryId);
       alert(`La palabra secreta era:\n\n"${r?.word||'?'}"\n${cat?`Categoría: ${cat.emoji} ${cat.name}`:''}`);
     });
-    on('btn-new-game','click',()=>{ S.screen='home'; S.assignedRoles=[]; S.currentDistributionIndex=0; S.revealState='hidden'; render(); });
+    on('btn-new-game','click',()=>{ S.screen='home'; S.assignedRoles=[]; S.viewedPlayers=[]; S.activeRevealIndex=null; S.revealState='hidden'; render(); });
   }
 
   // MODAL
