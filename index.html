@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>El Impostor</title>
+  <style>
+    :root {
+      --bg: #08081a;
+      --surface: rgba(255,255,255,0.06);
+      --surface2: rgba(255,255,255,0.12);
+      --border: rgba(255,255,255,0.12);
+      --text: #f0f0ff;
+      --text-muted: rgba(240,240,255,0.5);
+      --accent: #7c3aed;
+      --accent2: #db2777;
+      --civil-color: #10b981;
+      --impostor-color: #ef4444;
+      --gradient: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+      --gradient-btn: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      --card-bg: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.1);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+
+    html { height: 100%; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100%;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 25% 15%, rgba(124,58,237,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 85%, rgba(219,39,119,0.14) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app { position: relative; z-index: 1; min-height: 100dvh; }
+
+    /* ─── SCREEN ───────────────────────────────────── */
+    .screen {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: calc(16px + var(--safe-top)) 16px calc(24px + var(--safe-bottom));
+      max-width: 540px;
+      margin: 0 auto;
+      animation: fadeIn 0.28s ease;
+    }
+
+    @keyframes fadeIn  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse   { 0%,100% { transform:scale(1); } 50% { transform:scale(1.06); } }
+    @keyframes flipIn  { from { transform:perspective(600px) rotateY(-90deg); opacity:0; } to { transform:perspective(600px) rotateY(0deg); opacity:1; } }
+    @keyframes glow    { 0%,100% { box-shadow:0 0 18px rgba(124,58,237,0.4); } 50% { box-shadow:0 0 38px rgba(219,39,119,0.55); } }
+    @keyframes popIn   { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
+    @keyframes shake   { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-6px); } 75% { transform:translateX(6px); } }
+    @keyframes randSpin{ from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+
+    /* ─── HOME ─────────────────────────────────────── */
+    .home-header {
+      text-align: center; flex:1;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+      padding: 32px 0;
+    }
+    .home-logo { font-size: clamp(64px,18vw,90px); animation:pulse 3s ease-in-out infinite; filter:drop-shadow(0 0 20px rgba(219,39,119,0.5)); }
+    .home-title { font-size:clamp(38px,11vw,54px); font-weight:900; background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:-1.5px; }
+    .home-subtitle { font-size:clamp(13px,3.5vw,15px); color:var(--text-muted); max-width:280px; line-height:1.6; }
+    .home-stat { font-size:12px; color:var(--text-muted); margin-top:6px; }
+
+    /* ─── BUTTONS ──────────────────────────────────── */
+    .btn {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      padding:15px 22px; border-radius:16px; border:none;
+      font-size:clamp(14px,4vw,16px); font-weight:700; cursor:pointer;
+      transition:all 0.2s ease; width:100%; letter-spacing:0.3px;
+      min-height: 52px;
+    }
+    .btn:active { transform:scale(0.96); }
+    .btn-primary  { background:var(--gradient-btn); color:#fff; box-shadow:0 8px 24px rgba(124,58,237,0.4); }
+    .btn-primary:hover { box-shadow:0 12px 32px rgba(124,58,237,0.5); transform:translateY(-1px); }
+    .btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-secondary{ background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+    .btn-secondary:hover { background:rgba(255,255,255,0.17); }
+    .btn-ghost    { background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+    .btn-random   { background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(234,88,12,0.15)); color:#fbbf24; border:1.5px solid rgba(245,158,11,0.4); }
+    .btn-random.active { background:linear-gradient(135deg,rgba(245,158,11,0.3),rgba(234,88,12,0.25)); border-color:#f59e0b; box-shadow:0 0 16px rgba(245,158,11,0.3); }
+    .btn-sm { padding:10px 14px; font-size:14px; border-radius:12px; width:auto; min-height:40px; }
+
+    /* ─── HEADER BAR ───────────────────────────────── */
+    .screen-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+    .back-btn {
+      width:42px; height:42px; border-radius:13px; border:1px solid var(--border);
+      background:var(--surface); color:var(--text); font-size:18px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0;
+    }
+    .back-btn:hover  { background:var(--surface2); }
+    .back-btn:active { transform:scale(0.9); }
+    .screen-title { font-size:clamp(18px,5vw,22px); font-weight:800; flex:1; }
+
+    /* ─── CARDS ────────────────────────────────────── */
+    .card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:20px; padding:18px; backdrop-filter:blur(10px); }
+    .card+.card { margin-top:10px; }
+    .card-title { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.2px; margin-bottom:13px; }
+
+    /* ─── NUMBER CONTROLS ──────────────────────────── */
+    .number-control { display:flex; align-items:center; gap:12px; }
+    .number-btn {
+      width:48px; height:48px; border-radius:14px; border:1px solid var(--border);
+      background:var(--surface2); color:var(--text); font-size:24px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0;
+    }
+    .number-btn:hover  { background:rgba(255,255,255,0.18); }
+    .number-btn:active { transform:scale(0.86); }
+    .number-btn:disabled { opacity:0.25; cursor:not-allowed; transform:none; }
+    .number-display { flex:1; text-align:center; font-size:clamp(28px,8vw,36px); font-weight:900; background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+    /* ─── TOGGLE ───────────────────────────────────── */
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .toggle-info { flex:1; min-width:0; }
+    .toggle-label { font-size:clamp(13px,3.8vw,15px); font-weight:600; }
+    .toggle-desc  { font-size:clamp(11px,3vw,12px); color:var(--text-muted); margin-top:2px; line-height:1.4; }
+    .toggle { position:relative; width:52px; height:28px; flex-shrink:0; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .toggle-track { position:absolute; inset:0; background:rgba(255,255,255,0.12); border-radius:14px; cursor:pointer; transition:all 0.3s; border:1px solid var(--border); }
+    .toggle-track::after { content:''; position:absolute; width:22px; height:22px; border-radius:50%; background:#fff; top:2px; left:2px; transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1); box-shadow:0 2px 4px rgba(0,0,0,0.3); }
+    .toggle input:checked + .toggle-track { background:var(--gradient-btn); border-color:transparent; }
+    .toggle input:checked + .toggle-track::after { transform:translateX(24px); }
+
+    /* ─── PLAYER INPUTS ────────────────────────────── */
+    .player-inputs { display:flex; flex-direction:column; gap:8px; }
+    .player-input-row { display:flex; align-items:center; gap:10px; animation:slideUp 0.22s ease; }
+    .player-avatar { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .player-input {
+      flex:1; background:var(--surface2); border:1.5px solid var(--border); border-radius:12px;
+      padding:12px 14px; color:var(--text); font-size:15px; font-family:inherit;
+      outline:none; transition:border-color 0.2s; min-height:46px;
+    }
+    .player-input:focus { border-color:var(--accent); }
+    .player-input::placeholder { color:var(--text-muted); }
+
+    /* ─── CATEGORY SCREEN ──────────────────────────── */
+    .cat-toolbar {
+      display:flex; gap:8px; margin-bottom:12px; align-items:center; flex-wrap:wrap;
+    }
+    .cat-count-badge {
+      display:inline-flex; align-items:center; gap:5px; padding:6px 12px;
+      background:rgba(124,58,237,0.2); border:1px solid rgba(124,58,237,0.4);
+      border-radius:10px; font-size:13px; font-weight:700; color:#a78bfa;
+    }
+    .cat-count-badge.zero { background:var(--surface); border-color:var(--border); color:var(--text-muted); }
+
+    .random-banner {
+      background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(234,88,12,0.12));
+      border:1.5px solid rgba(245,158,11,0.35);
+      border-radius:16px; padding:14px 16px;
+      display:flex; align-items:center; gap:12px; margin-bottom:12px;
+      animation: popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    .random-banner-icon { font-size:28px; animation:randSpin 2s linear infinite; }
+    .random-banner-text { flex:1; }
+    .random-banner-title { font-size:14px; font-weight:700; color:#fbbf24; }
+    .random-banner-sub   { font-size:12px; color:rgba(251,191,36,0.7); margin-top:2px; }
+
+    .category-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    @media(min-width:400px) { .category-grid { grid-template-columns:1fr 1fr; } }
+
+    .category-card {
+      background:var(--card-bg); border:2px solid var(--card-border); border-radius:16px;
+      padding:14px 10px; cursor:pointer; transition:all 0.18s; text-align:center;
+      display:flex; flex-direction:column; align-items:center; gap:5px; position:relative;
+      min-height:90px; justify-content:center;
+    }
+    .category-card:active { transform:scale(0.94); }
+    .category-card.selected {
+      border-color:var(--accent); background:rgba(124,58,237,0.18);
+      box-shadow:0 0 0 1px var(--accent) inset;
+    }
+    .cat-check {
+      position:absolute; top:8px; right:8px; width:20px; height:20px;
+      background:var(--gradient-btn); border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; color:#fff; animation:popIn 0.2s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    .category-emoji { font-size:clamp(22px,6vw,28px); }
+    .category-name  { font-size:clamp(10px,2.8vw,12px); font-weight:700; color:var(--text); line-height:1.3; }
+    .category-count { font-size:10px; color:var(--text-muted); }
+
+    /* custom cat rows */
+    .custom-cat-row {
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--card-bg); border:2px solid var(--card-border);
+      border-radius:14px; padding:12px 14px; transition:all 0.18s; cursor:pointer;
+    }
+    .custom-cat-row.selected { border-color:var(--accent); background:rgba(124,58,237,0.15); }
+    .custom-cat-row:active { transform:scale(0.98); }
+    .custom-cat-info  { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+    .custom-cat-emoji { font-size:24px; flex-shrink:0; }
+    .custom-cat-name  { font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .custom-cat-count { font-size:12px; color:var(--text-muted); }
+    .custom-cat-actions { display:flex; gap:6px; flex-shrink:0; }
+
+    .icon-btn {
+      width:34px; height:34px; border-radius:9px; border:1px solid var(--border);
+      background:var(--surface); color:var(--text); font-size:14px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; transition:all 0.15s;
+    }
+    .icon-btn:hover  { background:var(--surface2); }
+    .icon-btn.delete { border-color:rgba(239,68,68,0.3); color:#f87171; }
+    .icon-btn.delete:hover { background:rgba(239,68,68,0.15); }
+
+    /* ─── DISTRIBUTION ─────────────────────────────── */
+    .distribution-screen { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; padding:20px 0; }
+    .distribution-avatar { width:clamp(80px,22vw,110px); height:clamp(80px,22vw,110px); border-radius:clamp(20px,6vw,30px); display:flex; align-items:center; justify-content:center; font-size:clamp(42px,12vw,56px); animation:glow 2s ease-in-out infinite; }
+    .distribution-name   { font-size:clamp(26px,7.5vw,34px); font-weight:900; }
+    .distribution-prompt { font-size:clamp(13px,3.5vw,15px); color:var(--text-muted); line-height:1.55; max-width:280px; }
+    .tap-zone {
+      width:clamp(160px,44vw,200px); height:clamp(160px,44vw,200px); border-radius:50%;
+      background:var(--gradient-btn); display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:8px; cursor:pointer; transition:all 0.2s;
+      box-shadow:0 8px 40px rgba(124,58,237,0.5); animation:pulse 2.2s ease-in-out infinite;
+    }
+    .tap-zone:active { transform:scale(0.9); }
+    .tap-zone-icon { font-size:clamp(38px,11vw,50px); }
+    .tap-zone-text { font-size:clamp(12px,3.2vw,14px); font-weight:700; color:rgba(255,255,255,0.9); }
+    .progress-dots { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:240px; }
+    .progress-dot  { width:8px; height:8px; border-radius:50%; background:var(--surface2); transition:all 0.3s; }
+    .progress-dot.done    { background:var(--gradient-btn); transform:scale(1.2); }
+    .progress-dot.current { background:var(--accent); box-shadow:0 0 8px var(--accent); }
+
+    /* ─── ROLE REVEAL ──────────────────────────────── */
+    .reveal-screen { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; padding:10px 0; }
+    .reveal-player-name { font-size:clamp(15px,4vw,18px); font-weight:700; color:var(--text-muted); }
+    .role-card {
+      width:100%; max-width:340px; border-radius:24px; padding:clamp(22px,6vw,32px) clamp(18px,5vw,24px);
+      display:flex; flex-direction:column; align-items:center; gap:12px;
+      animation:flipIn 0.45s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    .role-card.civil    { background:linear-gradient(135deg,rgba(16,185,129,0.22),rgba(5,150,105,0.1)); border:2px solid rgba(16,185,129,0.5); box-shadow:0 8px 32px rgba(16,185,129,0.2); }
+    .role-card.impostor { background:linear-gradient(135deg,rgba(239,68,68,0.22),rgba(185,28,28,0.1)); border:2px solid rgba(239,68,68,0.5); box-shadow:0 8px 32px rgba(239,68,68,0.2); }
+    .role-icon    { font-size:clamp(52px,14vw,68px); }
+    .role-label   { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:2px; opacity:0.65; }
+    .role-type    { font-size:clamp(30px,8.5vw,38px); font-weight:900; }
+    .role-type.civil    { color:var(--civil-color); }
+    .role-type.impostor { color:var(--impostor-color); }
+    .role-word-label    { font-size:12px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+    .role-word          { font-size:clamp(24px,7vw,30px); font-weight:900; }
+    .role-cat-label     { font-size:11px; color:var(--text-muted); margin-top:-4px; }
+    .role-partners-label{ font-size:12px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+    .role-partners      { font-size:clamp(14px,4vw,16px); font-weight:700; color:#f87171; }
+    .reveal-hint { font-size:clamp(12px,3.2vw,13px); color:var(--text-muted); line-height:1.5; max-width:300px; }
+
+    .hidden-role-screen { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; cursor:pointer; padding:20px; }
+    .hidden-role-icon    { font-size:clamp(56px,16vw,74px); opacity:0.25; }
+    .hidden-role-warning { font-size:clamp(11px,3vw,13px); color:var(--text-muted); opacity:0.55; }
+
+    /* ─── PLAYING ──────────────────────────────────── */
+    .playing-screen { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; padding:16px 0; }
+    .playing-icon     { font-size:clamp(64px,18vw,84px); animation:pulse 2.5s ease-in-out infinite; }
+    .playing-title    { font-size:clamp(28px,8vw,36px); font-weight:900; background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .playing-subtitle { font-size:clamp(13px,3.5vw,15px); color:var(--text-muted); }
+    .playing-info     { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    .info-badge { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:7px 12px; font-size:clamp(12px,3.2vw,13px); font-weight:600; }
+    .info-badge span { color:var(--text-muted); }
+    .playing-how-to { width:100%; text-align:left; }
+
+    /* ─── MODAL ────────────────────────────────────── */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.72); backdrop-filter:blur(5px);
+      z-index:100; display:flex; align-items:flex-end; padding:0 12px calc(12px + var(--safe-bottom));
+      animation:fadeIn 0.2s ease;
+    }
+    .modal {
+      background:#12122a; border:1px solid var(--border); border-radius:24px; padding:22px;
+      width:100%; max-width:540px; margin:0 auto; max-height:88dvh; overflow-y:auto;
+      animation:slideUp 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    .modal-title { font-size:clamp(17px,5vw,20px); font-weight:800; margin-bottom:18px; }
+    .form-group  { margin-bottom:14px; }
+    .form-label  { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:7px; display:block; }
+    .form-input  {
+      width:100%; background:var(--surface2); border:1.5px solid var(--border); border-radius:12px;
+      padding:12px 14px; color:var(--text); font-size:15px; font-family:inherit;
+      outline:none; transition:border-color 0.2s; min-height:46px;
+    }
+    .form-input:focus { border-color:var(--accent); }
+    .form-input::placeholder { color:var(--text-muted); }
+    .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:5px; margin-top:7px; }
+    .emoji-btn  { width:100%; aspect-ratio:1; border-radius:8px; border:2px solid transparent; background:var(--surface); font-size:clamp(18px,5vw,22px); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; }
+    .emoji-btn:hover    { background:var(--surface2); }
+    .emoji-btn.selected { border-color:var(--accent); background:rgba(124,58,237,0.2); }
+    .words-list { display:flex; flex-direction:column; gap:7px; }
+    .word-item  { display:flex; align-items:center; gap:7px; }
+    .word-tag   { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 11px; font-size:14px; }
+    .word-remove{ width:32px; height:32px; border-radius:8px; border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.1); color:#f87171; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0; }
+    .word-remove:hover { background:rgba(239,68,68,0.22); }
+    .add-word-row { display:flex; gap:8px; }
+    .add-word-row .form-input { flex:1; padding:11px 12px; }
+
+    /* ─── UTILITIES ────────────────────────────────── */
+    .section-label { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.2px; margin:18px 0 9px; }
+    .flex-col { display:flex; flex-direction:column; gap:10px; }
+    .mt-auto { margin-top:auto; }
+    .mt-8  { margin-top:8px; }
+    .mt-12 { margin-top:12px; }
+    .mt-16 { margin-top:16px; }
+    .divider { height:1px; background:var(--border); margin:4px 0; }
+    .selected-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; color:var(--accent); background:rgba(124,58,237,0.15); border:1px solid rgba(124,58,237,0.3); border-radius:6px; padding:2px 6px; text-transform:uppercase; letter-spacing:0.5px; }
+
+    /* ─── TOAST ────────────────────────────────────── */
+    .toast {
+      position:fixed; bottom:calc(24px + var(--safe-bottom)); left:50%; transform:translateX(-50%);
+      background:rgba(124,58,237,0.92); color:#fff; padding:12px 20px; border-radius:12px;
+      font-size:14px; font-weight:600; backdrop-filter:blur(10px); z-index:999;
+      animation:popIn 0.3s ease; white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,0.35); pointer-events:none;
+    }
+
+    /* ─── SCROLLBAR ────────────────────────────────── */
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
+
+    /* ─── RESPONSIVE TWEAKS ────────────────────────── */
+    @media(max-width:360px) {
+      .screen { padding-left:12px; padding-right:12px; }
+      .category-grid { grid-template-columns:1fr 1fr; gap:7px; }
+      .category-card { padding:11px 7px; min-height:82px; }
+      .number-btn { width:44px; height:44px; }
+      .card { padding:15px; }
+    }
+    @media(min-width:520px) {
+      .category-grid { grid-template-columns:1fr 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ══════════════════════════════════════════════════
+//  DATA — Categorías predefinidas (50+ palabras c/u)
+// ══════════════════════════════════════════════════
+const PREDEFINED_CATEGORIES = [
+  { id:'animales', name:'Animales', emoji:'🐾', words:['Perro','Gato','León','Elefante','Tigre','Oso','Jirafa','Cocodrilo','Delfín','Lobo','Zorro','Conejo','Caballo','Vaca','Cerdo','Gallina','Pato','Búho','Pingüino','Canguro','Koala','Panda','Gorila','Rinoceronte','Hipopótamo','Cebra','Camello','Llama','Tortuga','Águila','Murciélago','Mapache','Nutria','Tejón','Ornitorrinco','Armadillo','Flamenco','Tucán','Guepardo','Leopardo','Jaguar','Lince','Hiena','Chacal','Ñu','Okapi','Tapir','Capibara','Wombat','Castor'] },
+  { id:'oceano', name:'Océano', emoji:'🌊', words:['Tiburón','Ballena','Pulpo','Calamar','Cangrejo','Langosta','Medusa','Estrella de mar','Caballito de mar','Pez payaso','Tortuga marina','Mantarraya','Pez espada','Atún','Salmón','Erizo de mar','Foca','Morsa','Orca','Delfín','Raya','Pez globo','Pez ángel','Barracuda','Lenguado','Pez linterna','Lamprea','Pez aguja','Narvalo','Dugongo','Manatí','Almeja','Mejillón','Ostra','Erizo','Pepino de mar','Esponja','Coral','Anémona','Canguro de mar','Langostino','Gamba','Bogavante','Centollo','Caracol de mar','Nautilo','Vieira','Pez espátula','Lucio de mar','Pez remo'] },
+  { id:'comida', name:'Comida', emoji:'🍕', words:['Pizza','Hamburguesa','Sushi','Tacos','Pasta','Paella','Asado','Empanada','Burrito','Ramen','Sopa','Ensalada','Sandwich','Hot dog','Nuggets','Arroz','Lasaña','Ceviche','Milanesa','Falafel','Gyros','Wok','Dim sum','Pho','Pad thai','Shawarma','Kebab','Risotto','Goulash','Pierogi','Locro','Carbonara','Moussaka','Tagine','Bibimbap','Injera','Jerk chicken','Tamales','Pupusas','Arepas','Hummus','Baba ganoush','Cuscús','Borek','Pierogi','Mole','Enchiladas','Pozole','Cocido','Puchero'] },
+  { id:'postres', name:'Postres', emoji:'🍰', words:['Torta de chocolate','Helado de vainilla','Brownie','Flan','Mousse de chocolate','Cheesecake','Tiramisu','Macarons','Donut','Churros','Crepe','Waffle','Alfajor','Tarta de manzana','Profiteroles','Éclair','Crème brûlée','Panna cotta','Mochi','Baklava','Buñuelos','Strudel','Pavlova','Soufflé','Berlina','Tres leches','Natilla','Arroz con leche','Bizcocho','Brazo gitano','Turrón','Mazapán','Polvorón','Suspiro','Torrijas','Buñuelo de viento','Tocino del cielo','Pudín de pan','Babá al ron','Cannolo','Sfogliatella','Knafeh','Malabi','Halva','Gulab jamun','Kulfi','Rasgulla','Sesame ball','Egg tart','Madeleine'] },
+  { id:'bebidas', name:'Bebidas', emoji:'🥤', words:['Coca-Cola','Jugo de naranja','Café expreso','Té verde','Limonada','Mate','Agua con gas','Leche','Batido de frutilla','Cerveza','Vino tinto','Champagne','Whisky','Vodka','Gin','Tequila','Ron','Sidra','Kombucha','Energizante','Jugo de manzana','Agua de coco','Horchata','Chicha','Tepache','Kéfir','Lassi','Chai','Yerba mate','Guaraná','Licuado de banana','Capuchino','Latte','Macchiato','Frappuccino','Té de manzanilla','Infusión de menta','Agua de Jamaica','Tamarindo','Ponche','Pisco','Cachaça','Mezcal','Amaretto','Absenta','Sake','Vino de arroz','Hidromiel','Kvas','Boza'] },
+  { id:'paises', name:'Países', emoji:'🌍', words:['Argentina','Brasil','México','España','Francia','Italia','Alemania','Japón','China','Rusia','Estados Unidos','Canadá','Australia','India','Sudáfrica','Egipto','Turquía','Corea del Sur','Colombia','Chile','Perú','Cuba','Portugal','Grecia','Suecia','Nigeria','Kenia','Marruecos','Arabia Saudita','Irán','Pakistán','Indonesia','Vietnam','Tailandia','Filipinas','Polonia','Ucrania','Países Bajos','Bélgica','Suiza','Austria','Noruega','Dinamarca','Finlandia','Nueva Zelanda','Irlanda','Israel','Emiratos Árabes','Singapur','Malasia'] },
+  { id:'ciudades', name:'Ciudades', emoji:'🏙️', words:['Buenos Aires','París','Nueva York','Tokio','Londres','Barcelona','Roma','Berlín','Sídney','Dubai','Moscú','Pekín','Los Ángeles','Ámsterdam','Ciudad de México','São Paulo','Toronto','Seúl','Singapur','Estambul','El Cairo','Río de Janeiro','Miami','Chicago','Bogotá','Lima','Santiago','Montevideo','La Paz','Quito','Caracas','San José','Ciudad de Panamá','Santo Domingo','San Juan','La Habana','Madrid','Lisboa','Viena','Zúrich','Bruselas','Ámsterdam','Estocolmo','Oslo','Copenhague','Helsinki','Varsovia','Praga','Budapest','Atenas'] },
+  { id:'peliculas', name:'Películas', emoji:'🎬', words:['Titanic','Avatar','El Padrino','Avengers','Star Wars','El Rey León','Toy Story','Shrek','Matrix','Inception','Interstellar','El Señor de los Anillos','Harry Potter','Forrest Gump','Pulp Fiction','Fight Club','Joker','Batman Begins','Spider-Man','Frozen','Coco','Up','WALL-E','Ratatouille','Gladiador','El Silencio de los Corderos','Schindler\'s List','Saving Private Ryan','2001: Odisea del Espacio','Blade Runner','Alien','El Exorcista','Psicosis','Vertigo','Casablanca','Ciudadano Kane','Apocalypse Now','El Gran Lebowski','No Country for Old Men','There Will Be Blood','Mad Max','Dunkerque','1917','Oppenheimer','Parasite','Everything Everywhere','Dune','Black Panther','Doctor Strange','Guardianes de la Galaxia'] },
+  { id:'series', name:'Series de TV', emoji:'📺', words:['Breaking Bad','Game of Thrones','Friends','The Office','Stranger Things','La Casa de Papel','Black Mirror','Peaky Blinders','The Witcher','Squid Game','Narcos','Sherlock','House of Cards','Westworld','The Crown','Dexter','Lost','Prison Break','Grey\'s Anatomy','The Walking Dead','Better Call Saul','Ozark','Dark','Lupin','Élite','Succession','The Boys','Euphoria','Ted Lasso','Fleabag','Mindhunter','True Detective','Chernobyl','Band of Brothers','The Wire','Sopranos','Six Feet Under','Twin Peaks','X-Files','Buffy','24','The Mandalorian','House of the Dragon','Andor','Wednesday','Emily in Paris','Bridgerton','The Crown','Severance','White Lotus'] },
+  { id:'videojuegos', name:'Videojuegos', emoji:'🎮', words:['Minecraft','Fortnite','Among Us','FIFA','Call of Duty','GTA','League of Legends','Valorant','Pokémon','Zelda','Mario Bros','Roblox','Battlefield','Overwatch','Apex Legends','Red Dead Redemption','The Witcher 3','God of War','Dark Souls','Cyberpunk 2077','Elden Ring','Stardew Valley','Tetris','Street Fighter','Sonic','Halo','Doom','Quake','Counter-Strike','Dota 2','Hearthstone','Clash Royale','Candy Crush','Angry Birds','Temple Run','Subway Surfers','PUBG','Fall Guys','Rocket League','FIFA','NBA 2K','Madden','Resident Evil','Silent Hill','Bioshock','Portal','Half-Life','Team Fortress','Left 4 Dead','Mortal Kombat'] },
+  { id:'deportes', name:'Deportes', emoji:'⚽', words:['Fútbol','Básquetbol','Tenis','Natación','Atletismo','Ciclismo','Boxeo','Judo','Karate','Rugby','Hockey sobre hielo','Béisbol','Voleibol','Golf','Fórmula 1','Surf','Esquí alpino','Snowboard','Escalada','Pádel','Ping-pong','Bádminton','Esgrima','Tiro con arco','Halterofilia','Waterpolo','Polo','Squash','Racquetball','Críquet','Lacrosse','Béisbol','Softbol','Handball','Futsal','Fútbol americano','Rugby a 7','Bobsled','Skeleton','Luge','Biatlón','Remo','Canoa','Vela','Triatlón','Pentatlón','Decatlón','Gimnasia','Salto con garrocha','Maratón'] },
+  { id:'musica', name:'Géneros Musicales', emoji:'🎵', words:['Rock','Pop','Jazz','Clásica','Hip-Hop','Reggaeton','Cumbia','Salsa','Tango','Flamenco','Electrónica','Metal','Blues','Country','R&B','Soul','Funk','Punk','Indie','Bossa Nova','Ópera','Trap','Vallenato','Merengue','Bachata','Reggae','Ska','Drum and bass','Techno','House','Trance','Ambient','New age','Folk','Bluegrass','Gospel','Swing','Bebop','Fusion','Grunge','Post-rock','Math rock','Shoegaze','Darkwave','Synthwave','Vaporwave','Lo-fi','K-pop','J-pop','Afrobeat'] },
+  { id:'instrumentos', name:'Instrumentos', emoji:'🎸', words:['Guitarra eléctrica','Piano','Violín','Batería','Flauta traversa','Saxofón','Trompeta','Bajo eléctrico','Violonchelo','Arpa','Acordeón','Clarinete','Oboe','Trompa','Ukulele','Banjo','Mandolina','Sitar','Cajón','Xilófono','Marimba','Theremin','Sintetizador','Armónica','Clavecín','Contrabajo','Viola','Fagot','Tuba','Trombón','Eufonio','Corno inglés','Flauta dulce','Gaita','Sitar','Sarod','Tabla','Didgeridoo','Kalimba','Bouzouki','Charango','Cuatro venezolano','Balalaica','Bandoneón','Zanfona','Laúd','Cítara','Koto','Shamisen','Oud'] },
+  { id:'superheroes', name:'Superhéroes', emoji:'🦸', words:['Superman','Batman','Spider-Man','Iron Man','Capitán América','Thor','Hulk','Wonder Woman','Flash','Aquaman','Black Panther','Doctor Strange','Wolverine','Deadpool','Black Widow','Ojo de Halcón','Ant-Man','Capitana Marvel','Visión','Bruja Escarlata','Cyborg','Linterna Verde','Star-Lord','Groot','Rocket Raccoon','Shazam','Green Arrow','Batgirl','Nightwing','Robin','Daredevil','Jessica Jones','Luke Cage','Iron Fist','Punisher','Ghost Rider','Blade','Morbius','Venom','Thanos','Loki','Magneto','Profesor X','Cíclope','Jean Grey','Tormenta','Bestia','Gambit','Rogue'] },
+  { id:'profesiones', name:'Profesiones', emoji:'💼', words:['Médico','Abogado','Ingeniero','Arquitecto','Chef','Maestro','Bombero','Policía','Piloto','Enfermero','Dentista','Veterinario','Psicólogo','Contador','Periodista','Actor','Cantante','Fotógrafo','Diseñador','Programador','Electricista','Plomero','Carpintero','Jardinero','Astronauta','Científico','Biólogo','Químico','Físico','Matemático','Economista','Sociólogo','Antropólogo','Arqueólogo','Geólogo','Meteorólogo','Bombero','Paramédico','Cirujano','Dentista','Farmacéutico','Fisioterapeuta','Nutricionista','Psiquiatra','Detective','Juez','Senador','Diplomático','Traductor','Intérprete'] },
+  { id:'vehiculos', name:'Vehículos', emoji:'🚗', words:['Auto deportivo','Moto','Bicicleta','Camión','Autobús','Avión','Helicóptero','Barco','Tren de alta velocidad','Submarino','Cohete','Tanque','Tractor','Patineta eléctrica','Kayak','Velero','Yate','Globo aerostático','Teleférico','Cuadrimoto','Ambulancia','Camión de bomberos','Patrullero','Grúa','Excavadora','Jet privado','Hidroavión','Aerodeslizador','Trineo','Moto acuática','Patín en línea','Segway','Monopatín','Rickshaw','Bicitaxi','Carruaje','Tranvía','Metro','Monorraíl','Funicular','Zepelín','Dirigible','Avión ultraligero','Parapente','Ala delta','Paracaídas','Bote de remos','Canoa','Catamarán','Ferry'] },
+  { id:'hogar', name:'Hogar', emoji:'🏠', words:['Sofá','Televisor','Heladera','Microondas','Lavadora','Silla','Mesa','Cama','Almohada','Espejo','Lámpara','Ventilador','Aire acondicionado','Aspiradora','Plancha','Cafetera','Tostadora','Licuadora','Olla a presión','Sartén','Cuchillo','Colchón','Estante','Cortina','Alfombra','Cuadro','Florero','Reloj','Portarretrato','Cesto de ropa','Secadora','Lavavajillas','Horno','Anafe','Extractor','Batidora','Robot de cocina','Freidora de aire','Vaporizador','Humidificador','Purificador de aire','Calefactor','Termostato','Cerradura inteligente','Cámara de seguridad','Timbre','Antena','Router WiFi','Impresora','Escritorio'] },
+  { id:'ropa', name:'Ropa', emoji:'👗', words:['Remera','Pantalón','Vestido','Falda','Camisa','Saco','Abrigo','Jeans','Shorts','Zapatillas','Zapatos de taco','Botas','Sandalias','Medias','Guantes','Gorro de lana','Gorra','Bufanda','Cinturón','Corbata','Pijama','Bikini','Traje de baño','Chaleco','Traje formal','Smoking','Kimono','Sari','Kurta','Dashiki','Kilt','Poncho','Chiripa','Bombacha de campo','Alpargatas','Ojotas','Mocasines','Botines','Borcegos','Plataformas','Stilettos','Calzas','Leggings','Babuchas','Chalina','Foulard','Pañuelo','Visera','Sombrero fedora','Bombín'] },
+  { id:'espacio', name:'Espacio', emoji:'🪐', words:['Sol','Luna','Marte','Júpiter','Saturno','Venus','Neptuno','Urano','Mercurio','Plutón','Estrella','Galaxia','Agujero negro','Nebulosa','Cometa','Asteroide','Meteorito','Satélite','Cohete','Nave espacial','Astronauta','Telescopio','Constelación','Vía Láctea','Supernova','Púlsar','Quásar','Galaxia espiral','Galaxia elíptica','Cúmulo globular','Materia oscura','Energía oscura','Horizonte de sucesos','Singularidad','Agujero de gusano','Antimateria','Fuerza gravitacional','Marea gravitacional','Ola de gravedad','Espacio-tiempo','Big Bang','Inflación cósmica','Fondo de microondas','Radio telescopio','Observatorio','ISS','Sonda Voyager','Telescopio Hubble','James Webb','Starship'] },
+  { id:'olimpicos', name:'Deportes Olímpicos', emoji:'🏅', words:['100 metros planos','Maratón','Salto de altura','Salto de longitud','Salto triple','Lanzamiento de bala','Lanzamiento de disco','Lanzamiento de martillo','Lanzamiento de jabalina','Natación 100m','Mariposa','Braza','Espaldas','Crol','Natación sincronizada','Saltos ornamentales','Clavados','Gimnasia artística','Gimnasia rítmica','Trampolín','Lucha grecorromana','Lucha libre','Judo','Taekwondo','Boxeo','Esgrima','Tiro con arco','Tiro olímpico','Halterofilia','Remo','Canoa','Kayak','Vela','Triatlón','Pentatlón moderno','Ciclismo de pista','Ciclismo de montaña','BMX racing','Escalada','Skateboarding','Surf','Breaking'] },
+  { id:'historicos', name:'Personajes Históricos', emoji:'🏛️', words:['Napoleón Bonaparte','Cleopatra','Alejandro Magno','Julio César','Albert Einstein','Leonardo Da Vinci','Galileo Galilei','Isaac Newton','Marie Curie','Charles Darwin','Sigmund Freud','Karl Marx','Mahatma Gandhi','Nelson Mandela','Martin Luther King','Abraham Lincoln','Cristóbal Colón','Simón Bolívar','San Martín','Juana de Arco','Winston Churchill','Adolf Hitler','Joseph Stalin','Mao Zedong','Franklin Roosevelt','Nikola Tesla','Thomas Edison','Charles Darwin','Stephen Hawking','Alan Turing','Ada Lovelace','Nikola Tesla','Copérnico','Kepler','Pasteur','Fleming','Curie','Darwin','Freud','Jung','Marx','Engels','Lenin','Trotsky','Che Guevara','Fidel Castro','Ho Chi Minh','Gandhi','Mandela','Obama'] },
+  { id:'ciencia', name:'Ciencia', emoji:'🧪', words:['ADN','Átomo','Molécula','Fotosíntesis','Gravedad','Electricidad','Magnetismo','Ácido clorhídrico','Enzima','Proteína','Neurona','Célula madre','Virus','Bacteria','Evolución','Termodinámica','Física cuántica','Relatividad especial','Radiación','Fusión nuclear','Genética','Ecosistema','Clorofila','Ósmosis','Entropía','Efecto Doppler','Ley de Ohm','Tabla periódica','Elemento químico','Reacción química','Catálisis','Óxido','Electrodo','Protón','Neutrón','Electrón','Quarks','Bosón de Higgs','Superconductor','Plasma','Espectroscopia','Cromatografía','Electroforesis','PCR','Secuenciación','CRISPR','Nanotecnología','Superconductor','Fotón','Laser'] },
+  { id:'flores', name:'Flores y Plantas', emoji:'🌺', words:['Rosa roja','Girasol','Tulipán','Orquídea','Margarita','Lavanda','Lirio','Jazmín','Clavel','Magnolia','Cactus saguaro','Bambú','Aloe vera','Helecho','Palmera datilera','Bonsái','Enredadera','Amapola','Violeta','Hortensia','Dalia','Azalea','Camelia','Begonia','Geranio','Peonía','Gladiolo','Iris','Narciso','Jacinto','Crisantemo','Aster','Zinnia','Calendula','Siempreviva','Bugambilia','Adelfa','Hibisco','Jacarandá','Ceibo','Irupé','Flor de Loto','Flor de cerezo','Mimosa','Acacia','Ombu','Ombú','Frangipani','Heliotropo','Madreselva'] },
+  { id:'cocteles', name:'Cócteles', emoji:'🍹', words:['Mojito','Margarita','Piña Colada','Cosmopolitan','Negroni','Old Fashioned','Manhattan','Martini seco','Daiquiri de frutilla','Caipirinha','Aperol Spritz','Bellini','Mimosa','Sangría','Gin Tonic','Whisky Sour','Cuba Libre','Tequila Sunrise','Sex on the Beach','Blue Lagoon','Tom Collins','Moscow Mule','Kir Royal','Clover Club','Amaretto Sour','Pisco Sour','Dark and Stormy','Bee\'s Knees','Last Word','Paper Plane','Naked and Famous','Jungle Bird','Espresso Martini','Pornstar Martini','Clover Club','French 75','Sidecar','Stinger','Grasshopper','Pink Lady','Clover Club','Aviation','Corpse Reviver','Gimlet','Singapore Sling','Long Island','Harvey Wallbanger','Screwdriver','White Russian','Black Russian'] },
+  { id:'mitologia', name:'Mitología', emoji:'⚡', words:['Zeus','Poseidón','Hades','Atenea','Afrodita','Ares','Apolo','Artemisa','Hermes','Hera','Hefesto','Dionisio','Hércules','Aquiles','Odiseo','Minotauro','Medusa','Pegaso','Fénix','Cíclope','Sirena','Centauro','Tritón','Hidra','Grifo','Esfinge','Quimera','Cerbero','Caronte','Prometeo','Pandora','Ícaro','Dédalo','Jasón','Perseo','Teseo','Edipo','Antígona','Narciso','Eco','Orfeo','Eurídice','Endimión','Helios','Selene','Eos','Morfeo','Tánatos','Eros','Psique'] },
+  { id:'tecnologia', name:'Tecnología', emoji:'💻', words:['iPhone 15','Android','Laptop gaming','Tablet','Smartwatch','PlayStation 5','Xbox Series X','Nintendo Switch','Alexa','Google Home','Drone FPV','Impresora 3D','Realidad virtual','Inteligencia artificial','Bitcoin','Blockchain','WiFi 6','Bluetooth','USB-C','Cámara mirrorless','Robot aspiradora','GPS','ChatGPT','Netflix','Spotify','TikTok','Instagram','YouTube','WhatsApp','Zoom','Tesla','Coche autónomo','SpaceX','Cohete reutilizable','Satélite Starlink','Computadora cuántica','Chip neuronal','Exoesqueleto','Brazo robótico','Impresión 4D','Nanotecnología','Realidad aumentada','Metaverso','NFT','Web3','5G','Edge computing','Cloud computing','Machine learning','Deep learning'] },
+  { id:'emociones', name:'Emociones', emoji:'😊', words:['Alegría','Tristeza','Miedo','Enojo','Sorpresa','Asco','Vergüenza','Orgullo','Amor','Odio','Celos','Envidia','Gratitud','Nostalgia','Esperanza','Decepción','Euforia','Melancolía','Ansiedad','Paz interior','Entusiasmo','Aburrimiento','Confusión','Satisfacción','Culpa','Empatía','Compasión','Ira','Frustración','Desesperación','Soledad','Euforia','Éxtasis','Asombro','Admiración','Respeto','Desconfianza','Resentimiento','Rencor','Perdón','Aceptación','Serenidad','Valentía','Coraje','Determinación','Resignación','Incredulidad','Indiferencia','Deseo','Pasión'] },
+  { id:'lugares', name:'Lugares Famosos', emoji:'🗼', words:['Torre Eiffel','Gran Muralla China','Machu Picchu','Coliseo Romano','Taj Mahal','Estatua de la Libertad','Angkor Wat','Chichén Itzá','Stonehenge','Pirámides de Giza','Cristo Redentor','Cataratas del Niágara','Acrópolis de Atenas','Alhambra de Granada','Sagrada Familia','Big Ben','Ópera de Sídney','Monte Everest','Gran Cañón','Partenón','Catedral de Notre Dame','Torre de Pisa','Palacio de Buckingham','Casa Blanca','Kremlin','Palacio de Versalles','Mezquita Azul','Hagia Sofía','Petra de Jordania','Pompeya','Islas Galápagos','Antártida','Selva Amazónica','Desierto del Sahara','Himalaya','Polo Norte','Lago Titicaca','Cataratas del Iguazú','Glaciar Perito Moreno','Salar de Uyuni','Valle de la Luna','Arrecife de Coral','Bosque de Bambú','Monte Fuji','Vesuvio','Kilimanjaro','Monte Olimpo','Aconcagua','Cerro Torre','Torres del Paine'] },
+  { id:'anime', name:'Anime y Manga', emoji:'🇯🇵', words:['Naruto','Dragon Ball Z','One Piece','Attack on Titan','Demon Slayer','Jujutsu Kaisen','My Hero Academia','Fullmetal Alchemist','Death Note','Sword Art Online','Hunter x Hunter','Bleach','Fairy Tail','Tokyo Ghoul','No Game No Life','Code Geass','Steins;Gate','Re:Zero','Overlord','Black Clover','Chainsaw Man','Spy x Family','Vinland Saga','Mushoku Tensei','Mob Psycho','One Punch Man','Cowboy Bebop','Neon Genesis Evangelion','Ghost in the Shell','Akira','Princess Mononoke','Spirited Away','Your Name','A Silent Voice','Violet Evergarden','Nana','Clannad','Angel Beats','Toradora','Anohana'] },
+  { id:'musicos', name:'Artistas Musicales', emoji:'🎤', words:['Michael Jackson','Beatles','Elvis Presley','Madonna','Freddie Mercury','Bob Marley','David Bowie','Prince','Whitney Houston','Mariah Carey','Beyoncé','Taylor Swift','Adele','Ed Sheeran','Justin Bieber','Rihanna','Lady Gaga','Bruno Mars','The Weeknd','Drake','Eminem','Jay-Z','Kanye West','Kendrick Lamar','Bad Bunny','J Balvin','Maluma','Shakira','Enrique Iglesias','Daddy Yankee','Cardi B','Billie Eilish','Dua Lipa','Ariana Grande','Post Malone','Travis Scott','Nicki Minaj','Celine Dion','Elton John','Phil Collins'] },
+  { id:'marcas', name:'Marcas Famosas', emoji:'🏷️', words:['Nike','Adidas','Apple','Google','Microsoft','Amazon','Tesla','McDonald\'s','Coca-Cola','Pepsi','Samsung','Sony','Toyota','BMW','Mercedes','Ferrari','Louis Vuitton','Gucci','Chanel','Prada','Zara','H&M','IKEA','Lego','Disney','Netflix','Spotify','Uber','Airbnb','Facebook','Instagram','Twitter','YouTube','TikTok','WhatsApp','Rolex','Cartier','Hermès','Versace','Armani','Ralph Lauren','Calvin Klein','Levis','Converse','Vans','Puma','Under Armour','Red Bull','Monster','Starbucks','Subway'] },
+];
+
+const PLAYER_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#d35400','#2980b9','#27ae60','#8e44ad','#16a085','#c0392b','#2c3e50','#7f8c8d','#f1c40f','#e91e63','#00bcd4','#ff5722','#607d8b'];
+const PLAYER_EMOJIS = ['🐶','🐱','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄','🐺','🦝','🐭','🐹','🐰','🦔','🐲'];
+const MODAL_EMOJIS  = ['🎯','🏆','🎲','🎭','🎪','🎨','🎬','🎵','🌟','⚡','🔥','💎','🎮','🚀','🌈','🍀','💡','🔮','🎁','🌀','👻','🤖','🦋','🎃','🎈','🌙','☀️','🌊','🏔️','🌸'];
+
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+let S = {
+  screen: 'home',
+  playerCount: 4,
+  impostorCount: 1,
+  impostorsKnowEachOther: false,
+  showCategory: true,
+  playerNames: ['','','',''],
+  selectedCategoryIds: [],
+  randomMode: false,
+  customCategories: [],
+  assignedRoles: [],
+  currentDistributionIndex: 0,
+  revealState: 'hidden',
+  modalOpen: false,
+  modalMode: null,
+  modalEditId: null,
+  modalData: { name:'', emoji:'🎯', words:[], newWord:'' },
+};
+
+// ══════════════════════════════════════════════════
+//  PERSISTENCE
+// ══════════════════════════════════════════════════
+function loadStorage() {
+  try {
+    const c = localStorage.getItem('impostor_custom_categories');
+    if (c) S.customCategories = JSON.parse(c);
+  } catch(e) {}
+}
+function saveStorage() {
+  localStorage.setItem('impostor_custom_categories', JSON.stringify(S.customCategories));
+}
+
+// ══════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════
+const shuffle = a => { const r=[...a]; for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; };
+const pick    = a => a[Math.floor(Math.random()*a.length)];
+const escape  = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const allCats = () => [...PREDEFINED_CATEGORIES, ...S.customCategories];
+const catById = id => allCats().find(c => c.id === id);
+const playerName  = i => { const n=(S.playerNames[i]||'').trim(); return n||`Jugador ${i+1}`; };
+const playerColor = i => PLAYER_COLORS[i % PLAYER_COLORS.length];
+const playerEmoji = i => PLAYER_EMOJIS[i % PLAYER_EMOJIS.length];
+
+function showToast(msg) {
+  document.querySelectorAll('.toast').forEach(e=>e.remove());
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2500);
+}
+
+// ══════════════════════════════════════════════════
+//  GAME LOGIC
+// ══════════════════════════════════════════════════
+function assignRoles() {
+  let activeCatIds = S.selectedCategoryIds;
+  if (S.randomMode) {
+    // Pick from ALL categories randomly
+    activeCatIds = shuffle(allCats().map(c=>c.id)).slice(0, Math.max(1, Math.floor(Math.random()*5)+1));
+  }
+
+  // Build combined word pool from all selected categories
+  const wordPool = activeCatIds.flatMap(id => catById(id)?.words || []);
+  const word = pick(wordPool.length ? wordPool : ['???']);
+
+  // Figure out which category the word came from (for display)
+  let chosenCatId = activeCatIds[0];
+  for (const id of activeCatIds) {
+    const cat = catById(id);
+    if (cat && cat.words.includes(word)) { chosenCatId = id; break; }
+  }
+
+  const indexes = Array.from({length: S.playerCount}, (_,i)=>i);
+  const impostorSet = new Set(shuffle(indexes).slice(0, S.impostorCount));
+
+  S.assignedRoles = indexes.map(i => ({
+    playerIndex: i,
+    role: impostorSet.has(i) ? 'impostor' : 'civil',
+    word,
+    categoryId: chosenCatId,
+    partners: [],
+  }));
+
+  if (S.impostorsKnowEachOther && S.impostorCount > 1) {
+    const impNames = [...impostorSet].map(i=>playerName(i));
+    S.assignedRoles.forEach(r => {
+      if (r.role === 'impostor') r.partners = impNames.filter(n=>n!==playerName(r.playerIndex));
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════
+function render() {
+  const app = document.getElementById('app');
+  const screens = { home:renderHome, setup:renderSetup, category:renderCategory, distribution:renderDistribution, reveal:renderReveal, playing:renderPlaying };
+  app.innerHTML = (screens[S.screen] || renderHome)();
+  if (S.modalOpen) app.insertAdjacentHTML('beforeend', renderModal());
+  attachEvents();
+}
+
+// ─── HOME ──────────────────────────────────────
+function renderHome() {
+  return `<div class="screen">
+    <div class="home-header">
+      <div class="home-logo">🕵️</div>
+      <div class="home-title">El Impostor</div>
+      <div class="home-subtitle">¿Podés descubrir al impostor entre tus amigos?</div>
+      <div class="home-stat">${PREDEFINED_CATEGORIES.length + S.customCategories.length} categorías disponibles</div>
+    </div>
+    <div class="flex-col mt-auto">
+      <button class="btn btn-primary" id="btn-play">🎮 Jugar</button>
+    </div>
+  </div>`;
+}
+
+// ─── SETUP ─────────────────────────────────────
+function renderSetup() {
+  const maxImp = Math.max(1, Math.floor(S.playerCount/2));
+  const namesHTML = Array.from({length:S.playerCount},(_,i)=>`
+    <div class="player-input-row">
+      <div class="player-avatar" style="background:${playerColor(i)}22;color:${playerColor(i)}">${playerEmoji(i)}</div>
+      <input class="player-input" placeholder="Jugador ${i+1}" value="${escape(S.playerNames[i]||'')}"
+        data-pi="${i}" id="pname-${i}" maxlength="20" inputmode="text" autocomplete="off">
+    </div>`).join('');
+  return `<div class="screen">
+    <div class="screen-header">
+      <button class="back-btn" id="btn-back">←</button>
+      <div class="screen-title">Configuración</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Jugadores</div>
+      <div class="number-control">
+        <button class="number-btn" id="dec-players" ${S.playerCount<=3?'disabled':''}>−</button>
+        <div class="number-display">${S.playerCount}</div>
+        <button class="number-btn" id="inc-players" ${S.playerCount>=20?'disabled':''}>+</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Impostores</div>
+      <div class="number-control">
+        <button class="number-btn" id="dec-imp" ${S.impostorCount<=1?'disabled':''}>−</button>
+        <div class="number-display">${S.impostorCount}</div>
+        <button class="number-btn" id="inc-imp" ${S.impostorCount>=maxImp?'disabled':''}>+</button>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:10px">
+        ${S.playerCount-S.impostorCount} civil${S.playerCount-S.impostorCount!==1?'es':''} · ${S.impostorCount} impostor${S.impostorCount>1?'es':''}
+      </div>
+    </div>
+    <div class="card">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-label">🤝 Impostores se conocen</div>
+          <div class="toggle-desc">Los impostores saben quiénes son sus compañeros</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tog-know" ${S.impostorsKnowEachOther?'checked':''} ${S.impostorCount<2?'disabled':''}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      ${S.impostorCount<2?'<div style="font-size:11px;color:var(--text-muted);margin-top:8px">Necesitás al menos 2 impostores</div>':''}
+    </div>
+    <div class="card">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-label">🏷️ Mostrar categoría</div>
+          <div class="toggle-desc">Los jugadores verán el nombre de la categoría al revelar su rol</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tog-cat" ${S.showCategory?'checked':''}>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+    <div class="section-label">Nombres de jugadores</div>
+    <div class="player-inputs">${namesHTML}</div>
+    <div class="flex-col mt-16">
+      <button class="btn btn-primary" id="btn-to-cat">📂 Elegir categoría →</button>
+    </div>
+  </div>`;
+}
+
+// ─── CATEGORY ──────────────────────────────────
+function renderCategory() {
+  const selCount = S.randomMode ? 'Modo aleatorio' : S.selectedCategoryIds.length;
+  const badgeCls = S.selectedCategoryIds.length===0 && !S.randomMode ? 'zero' : '';
+  const canStart = S.randomMode || S.selectedCategoryIds.length > 0;
+
+  const predHTML = PREDEFINED_CATEGORIES.map(c => {
+    const sel = S.selectedCategoryIds.includes(c.id);
+    return `<div class="category-card ${sel?'selected':''}" data-cat="${c.id}">
+      ${sel?'<div class="cat-check">✓</div>':''}
+      <div class="category-emoji">${c.emoji}</div>
+      <div class="category-name">${c.name}</div>
+      <div class="category-count">${c.words.length} palabras</div>
+    </div>`;
+  }).join('');
+
+  const customSection = S.customCategories.length ? `
+    <div class="section-label">Tus categorías</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${S.customCategories.map(c=>{
+        const sel = S.selectedCategoryIds.includes(c.id);
+        return `<div class="custom-cat-row ${sel?'selected':''}" data-cat="${c.id}">
+          <div class="custom-cat-info">
+            <div class="custom-cat-emoji">${c.emoji}</div>
+            <div>
+              <div class="custom-cat-name">${escape(c.name)}</div>
+              <div class="custom-cat-count">${c.words.length} palabras${sel?' · ✓ Seleccionada':''}</div>
+            </div>
+          </div>
+          <div class="custom-cat-actions">
+            <button class="icon-btn" data-edit="${c.id}" onclick="event.stopPropagation()">✏️</button>
+            <button class="icon-btn delete" data-del="${c.id}" onclick="event.stopPropagation()">🗑️</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  return `<div class="screen">
+    <div class="screen-header">
+      <button class="back-btn" id="btn-back">←</button>
+      <div class="screen-title">Categorías</div>
+      <div class="cat-count-badge ${badgeCls}">
+        ${S.randomMode ? '🎲 Aleatorio' : `✓ ${S.selectedCategoryIds.length}`}
+      </div>
+    </div>
+
+    ${S.randomMode ? `<div class="random-banner">
+      <div class="random-banner-icon">🎲</div>
+      <div class="random-banner-text">
+        <div class="random-banner-title">Modo Aleatorio activado</div>
+        <div class="random-banner-sub">La categoría se elige sola al iniciar · Incluye tus categorías</div>
+      </div>
+    </div>` : ''}
+
+    <div class="cat-toolbar">
+      <button class="btn btn-random btn-sm ${S.randomMode?'active':''}" id="btn-random-mode" style="width:auto">
+        🎲 ${S.randomMode?'Aleatorio ON':'Modo Aleatorio'}
+      </button>
+      ${!S.randomMode && S.selectedCategoryIds.length>0 ? `<button class="btn btn-ghost btn-sm" id="btn-clear-sel" style="width:auto">✕ Limpiar</button>` : ''}
+    </div>
+
+    ${customSection}
+
+    <div class="section-label" style="${S.customCategories.length?'':'margin-top:0'}">Categorías predefinidas</div>
+    <div class="category-grid">${predHTML}</div>
+
+    <div class="flex-col mt-16">
+      <button class="btn btn-secondary" id="btn-create-cat">➕ Crear categoría personalizada</button>
+      <button class="btn btn-primary" id="btn-start" ${!canStart?'disabled':''}>
+        🎯 Iniciar juego →
+      </button>
+      ${!canStart?'<div style="text-align:center;font-size:12px;color:var(--text-muted)">Elegí al menos una categoría o activá el modo aleatorio</div>':''}
+    </div>
+  </div>`;
+}
+
+// ─── DISTRIBUTION ───────────────────────────────
+function renderDistribution() {
+  const idx = S.currentDistributionIndex;
+  const name = playerName(idx);
+  const color = playerColor(idx);
+  const emoji = playerEmoji(idx);
+  const dots = Array.from({length:S.playerCount},(_,i)=>`<div class="progress-dot${i<idx?' done':i===idx?' current':''}"></div>`).join('');
+  return `<div class="screen">
+    <div class="screen-header">
+      <button class="back-btn" id="btn-back">←</button>
+      <div class="screen-title">Reparto</div>
+      <div style="font-size:14px;color:var(--text-muted)">${idx+1}/${S.playerCount}</div>
+    </div>
+    <div class="distribution-screen">
+      <div class="distribution-avatar" style="background:${color}22;color:${color}">${emoji}</div>
+      <div class="distribution-name" style="color:${color}">${escape(name)}</div>
+      <div class="distribution-prompt">Pasá el teléfono a <strong>${escape(name)}</strong><br>cuando nadie más esté mirando</div>
+      <div class="tap-zone" id="btn-tap">
+        <div class="tap-zone-icon">👁️</div>
+        <div class="tap-zone-text">Tocar para ver rol</div>
+      </div>
+      <div class="progress-dots">${dots}</div>
+    </div>
+  </div>`;
+}
+
+// ─── REVEAL ────────────────────────────────────
+function renderReveal() {
+  const idx = S.currentDistributionIndex;
+  const role = S.assignedRoles[idx];
+  const name = playerName(idx);
+  const isLast = idx === S.playerCount-1;
+  const isCivil = role.role === 'civil';
+  const cat = catById(role.categoryId);
+
+  if (S.revealState === 'hidden') {
+    return `<div class="screen">
+      <div class="screen-header">
+        <div class="screen-title" style="text-align:center;flex:1">🔒 Pantalla oculta</div>
+      </div>
+      <div class="hidden-role-screen" id="btn-show-role">
+        <div class="hidden-role-icon">🙈</div>
+        <div class="distribution-name">${escape(name)}</div>
+        <div style="font-size:clamp(14px,4vw,16px);color:var(--text-muted)">Tocá para ver tu rol</div>
+        <div class="hidden-role-warning">Asegurate de que nadie más esté mirando</div>
+      </div>
+    </div>`;
+  }
+
+  const catDisplay = S.showCategory && cat ? `
+    <div class="role-word-label">Categoría</div>
+    <div style="font-size:clamp(13px,3.5vw,15px);color:var(--text-muted)">${cat.emoji} ${escape(cat.name)}</div>` : '';
+
+  const roleCard = isCivil
+    ? `<div class="role-card civil">
+        <div class="role-icon">👮</div>
+        <div class="role-label">Tu rol</div>
+        <div class="role-type civil">CIVIL</div>
+        ${catDisplay}
+        <div class="role-word-label">La palabra secreta es</div>
+        <div class="role-word">${escape(role.word)}</div>
+      </div>`
+    : `<div class="role-card impostor">
+        <div class="role-icon">🕵️</div>
+        <div class="role-label">Tu rol</div>
+        <div class="role-type impostor">IMPOSTOR</div>
+        ${S.showCategory && cat ? `
+          <div class="role-word-label">Categoría</div>
+          <div style="font-size:clamp(13px,3.5vw,15px);color:var(--text-muted)">${cat.emoji} ${escape(cat.name)}</div>` : ''}
+        <div class="role-word-label">No conocés la palabra</div>
+        <div class="role-word" style="opacity:0.35;font-size:clamp(18px,5vw,22px)">¡Tenés que fingir!</div>
+        ${role.partners.length>0?`
+          <div class="role-partners-label">Tus compañeros impostores</div>
+          <div class="role-partners">${role.partners.map(p=>escape(p)).join(', ')}</div>`:''}
+      </div>`;
+
+  return `<div class="screen">
+    <div class="screen-header">
+      <div class="screen-title" style="flex:1">Tu rol secreto</div>
+    </div>
+    <div class="reveal-screen">
+      <div class="reveal-player-name">👤 ${escape(name)}</div>
+      ${roleCard}
+      <div class="reveal-hint">
+        ${isCivil ? 'Recordá la palabra. ¡Hablá sobre ella sin decirla y descubrí al impostor!' : 'Fingí conocer la palabra sin delatarte. ¡No te descubran!'}
+      </div>
+      <button class="btn btn-primary" id="btn-done">
+        ${isLast ? '🎮 ¡A jugar!' : '➡️ Listo, pasar al siguiente'}
+      </button>
+    </div>
+  </div>`;
+}
+
+// ─── PLAYING ───────────────────────────────────
+function renderPlaying() {
+  const civilCount = S.playerCount - S.impostorCount;
+  const word = S.assignedRoles[0]?.word || '?';
+  const cat  = catById(S.assignedRoles[0]?.categoryId);
+
+  return `<div class="screen">
+    <div class="playing-screen">
+      <div class="playing-icon">🎭</div>
+      <div class="playing-title">¡Que empiece!</div>
+      ${S.showCategory && cat
+        ? `<div class="playing-subtitle">${cat.emoji} Categoría: <strong>${escape(cat.name)}</strong></div>`
+        : `<div class="playing-subtitle" style="opacity:0.4">Categoría oculta</div>`}
+      <div class="playing-info">
+        <div class="info-badge">👥 ${S.playerCount} jugadores</div>
+        <div class="info-badge">👮 ${civilCount} civil${civilCount!==1?'es':''}</div>
+        <div class="info-badge">🕵️ ${S.impostorCount} impostor${S.impostorCount>1?'es':''}</div>
+      </div>
+      <div class="card playing-how-to">
+        <div class="card-title">¿Cómo se juega?</div>
+        <ol style="font-size:clamp(12px,3.5vw,14px);line-height:1.85;padding-left:18px;color:var(--text-muted)">
+          <li>Todos hablan sobre <strong style="color:var(--text)">la palabra secreta</strong> sin decirla</li>
+          <li>Los impostores fingen que la conocen</li>
+          <li>Al final <strong style="color:var(--text)">votan</strong> quién es el impostor</li>
+          <li>Si atrapan al impostor → <strong style="color:var(--civil-color)">ganan los civiles</strong></li>
+          <li>Si escapa → <strong style="color:var(--impostor-color)">ganan los impostores</strong></li>
+        </ol>
+      </div>
+    </div>
+    <div class="flex-col mt-16">
+      <button class="btn btn-secondary" id="btn-reveal-word">👁️ Revelar palabra secreta</button>
+      <button class="btn btn-ghost" id="btn-new-game">🔄 Nueva partida</button>
+    </div>
+  </div>`;
+}
+
+// ─── MODAL ─────────────────────────────────────
+function renderModal() {
+  const d = S.modalData;
+  const isEdit = S.modalMode === 'edit';
+  const wordsHTML = d.words.map((w,i)=>`
+    <div class="word-item">
+      <div class="word-tag">${escape(w)}</div>
+      <button class="word-remove" data-rw="${i}">×</button>
+    </div>`).join('');
+  const emojiHTML = MODAL_EMOJIS.map(em=>`
+    <button class="emoji-btn ${d.emoji===em?'selected':''}" data-em="${em}">${em}</button>`).join('');
+  const valid = d.name.trim()!=='' && d.words.length>=5;
+  return `<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-title">${isEdit?'✏️ Editar categoría':'➕ Nueva categoría'}</div>
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="m-name" placeholder="Ej: Películas de terror" value="${escape(d.name)}" maxlength="30" inputmode="text">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji</label>
+        <div class="emoji-grid">${emojiHTML}</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Palabras <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(mínimo 5)</span></label>
+        <div class="words-list">${wordsHTML}</div>
+        <div class="add-word-row" style="margin-top:8px">
+          <input class="form-input" id="m-word" placeholder="Agregar palabra..." value="${escape(d.newWord)}" maxlength="50" inputmode="text">
+          <button class="btn btn-secondary btn-sm" id="btn-add-word">Agregar</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:6px">${d.words.length} palabra${d.words.length!==1?'s':''} · mínimo 5 para guardar</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button class="btn btn-ghost" id="btn-cancel" style="flex:1">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save" style="flex:1" ${!valid?'disabled':''}>
+          ${isEdit?'Guardar':'Crear categoría'}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  EVENTS
+// ══════════════════════════════════════════════════
+function on(id, ev, fn) { const el=document.getElementById(id); if(el) el.addEventListener(ev,fn); }
+function onQ(sel, fn)   { document.querySelectorAll(sel).forEach(el=>el.addEventListener('click',fn)); }
+
+function attachEvents() {
+  // HOME
+  on('btn-play','click', ()=>{ S.screen='setup'; render(); });
+
+  // SETUP
+  if (S.screen==='setup') {
+    on('btn-back','click',()=>{ S.screen='home'; render(); });
+    on('dec-players','click',()=>{ if(S.playerCount>3){ S.playerCount--; S.playerNames=S.playerNames.slice(0,S.playerCount); S.impostorCount=Math.min(S.impostorCount,Math.floor(S.playerCount/2)); render(); } });
+    on('inc-players','click',()=>{ if(S.playerCount<20){ S.playerCount++; if(S.playerNames.length<S.playerCount) S.playerNames.push(''); render(); } });
+    on('dec-imp','click',()=>{ if(S.impostorCount>1){ S.impostorCount--; render(); } });
+    on('inc-imp','click',()=>{ const mx=Math.floor(S.playerCount/2); if(S.impostorCount<mx){ S.impostorCount++; render(); } });
+    on('tog-know','change', e=>{ S.impostorsKnowEachOther=e.target.checked; });
+    on('tog-cat','change',  e=>{ S.showCategory=e.target.checked; });
+    document.querySelectorAll('.player-input').forEach(inp=>{
+      inp.addEventListener('input', e=>{ S.playerNames[+e.target.dataset.pi]=e.target.value; });
+    });
+    on('btn-to-cat','click',()=>{
+      document.querySelectorAll('.player-input').forEach(inp=>{ S.playerNames[+inp.dataset.pi]=inp.value; });
+      S.screen='category'; render();
+    });
+  }
+
+  // CATEGORY
+  if (S.screen==='category') {
+    on('btn-back','click',()=>{ S.screen='setup'; render(); });
+    on('btn-random-mode','click',()=>{ S.randomMode=!S.randomMode; render(); });
+    on('btn-clear-sel','click',()=>{ S.selectedCategoryIds=[]; render(); });
+
+    // Toggle predefined + custom cards
+    document.querySelectorAll('[data-cat]').forEach(el=>{
+      el.addEventListener('click',()=>{
+        const id=el.dataset.cat;
+        const idx=S.selectedCategoryIds.indexOf(id);
+        if(idx===-1) S.selectedCategoryIds.push(id); else S.selectedCategoryIds.splice(idx,1);
+        if(S.selectedCategoryIds.length>0) S.randomMode=false;
+        render();
+      });
+    });
+
+    // Edit / delete custom
+    document.querySelectorAll('[data-edit]').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation();
+        const cat=S.customCategories.find(c=>c.id===btn.dataset.edit);
+        if(cat){ S.modalMode='edit'; S.modalEditId=cat.id; S.modalData={name:cat.name,emoji:cat.emoji,words:[...cat.words],newWord:''}; S.modalOpen=true; render(); }
+      });
+    });
+    document.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation();
+        if(confirm('¿Eliminar esta categoría?')){ const id=btn.dataset.del; S.customCategories=S.customCategories.filter(c=>c.id!==id); S.selectedCategoryIds=S.selectedCategoryIds.filter(x=>x!==id); saveStorage(); render(); }
+      });
+    });
+
+    on('btn-create-cat','click',()=>{ S.modalMode='create'; S.modalEditId=null; S.modalData={name:'',emoji:'🎯',words:[],newWord:''}; S.modalOpen=true; render(); });
+    on('btn-start','click',()=>{
+      if(!S.randomMode && S.selectedCategoryIds.length===0) return;
+      assignRoles();
+      S.currentDistributionIndex=0; S.revealState='hidden'; S.screen='distribution'; render();
+    });
+  }
+
+  // DISTRIBUTION
+  if (S.screen==='distribution') {
+    on('btn-back','click',()=>{ S.screen='category'; render(); });
+    on('btn-tap','click',()=>{ S.revealState='hidden'; S.screen='reveal'; render(); });
+  }
+
+  // REVEAL
+  if (S.screen==='reveal') {
+    on('btn-show-role','click',()=>{ S.revealState='showing'; render(); });
+    on('btn-done','click',()=>{
+      if(S.currentDistributionIndex===S.playerCount-1){ S.screen='playing'; render(); }
+      else { S.currentDistributionIndex++; S.revealState='hidden'; S.screen='distribution'; render(); }
+    });
+  }
+
+  // PLAYING
+  if (S.screen==='playing') {
+    on('btn-reveal-word','click',()=>{
+      const r=S.assignedRoles[0]; const cat=catById(r?.categoryId);
+      alert(`La palabra secreta era:\n\n"${r?.word||'?'}"\n${cat?`Categoría: ${cat.emoji} ${cat.name}`:''}`);
+    });
+    on('btn-new-game','click',()=>{ S.screen='home'; S.assignedRoles=[]; S.currentDistributionIndex=0; S.revealState='hidden'; render(); });
+  }
+
+  // MODAL
+  if (S.modalOpen) {
+    on('modal-overlay','click', e=>{ if(e.target.id==='modal-overlay') closeModal(); });
+    on('btn-cancel','click', closeModal);
+    on('m-name','input', e=>{ S.modalData.name=e.target.value; rerenderModal(); });
+    on('m-word','input', e=>{ S.modalData.newWord=e.target.value; });
+    on('m-word','keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addWord(); } });
+    on('btn-add-word','click', addWord);
+    on('btn-save','click', saveCategory);
+    document.querySelectorAll('.emoji-btn[data-em]').forEach(btn=>{
+      btn.addEventListener('click',()=>{ S.modalData.emoji=btn.dataset.em; rerenderModal(); });
+    });
+    document.querySelectorAll('[data-rw]').forEach(btn=>{
+      btn.addEventListener('click',()=>{ S.modalData.words.splice(+btn.dataset.rw,1); rerenderModal(); });
+    });
+  }
+}
+
+function addWord() {
+  const inp=document.getElementById('m-word');
+  const w=(inp?inp.value:S.modalData.newWord).trim();
+  if(!w) return;
+  if(S.modalData.words.includes(w)){ showToast('Esa palabra ya está'); return; }
+  S.modalData.words.push(w);
+  S.modalData.newWord='';
+  rerenderModal();
+  setTimeout(()=>{ const i=document.getElementById('m-word'); if(i){ i.focus(); } },50);
+}
+
+function saveCategory() {
+  const {name,emoji,words}=S.modalData;
+  if(!name.trim()||words.length<5) return;
+  if(S.modalMode==='create') {
+    const id='custom_'+Date.now();
+    S.customCategories.push({id,name:name.trim(),emoji,words:[...words]});
+    S.selectedCategoryIds.push(id);
+    S.randomMode=false;
+    showToast('¡Categoría creada!');
+  } else {
+    const cat=S.customCategories.find(c=>c.id===S.modalEditId);
+    if(cat){ cat.name=name.trim(); cat.emoji=emoji; cat.words=[...words]; }
+    showToast('¡Categoría actualizada!');
+  }
+  saveStorage(); closeModal();
+}
+
+function closeModal() { S.modalOpen=false; S.modalMode=null; render(); }
+
+function rerenderModal() {
+  const old=document.getElementById('modal-overlay');
+  if(old) old.remove();
+  document.getElementById('app').insertAdjacentHTML('beforeend',renderModal());
+  on('modal-overlay','click',e=>{ if(e.target.id==='modal-overlay') closeModal(); });
+  on('btn-cancel','click',closeModal);
+  on('m-name','input',e=>{ S.modalData.name=e.target.value; rerenderModal(); });
+  on('m-word','input',e=>{ S.modalData.newWord=e.target.value; });
+  on('m-word','keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addWord(); } });
+  on('btn-add-word','click',addWord);
+  on('btn-save','click',saveCategory);
+  document.querySelectorAll('.emoji-btn[data-em]').forEach(b=>b.addEventListener('click',()=>{ S.modalData.emoji=b.dataset.em; rerenderModal(); }));
+  document.querySelectorAll('[data-rw]').forEach(b=>b.addEventListener('click',()=>{ S.modalData.words.splice(+b.dataset.rw,1); rerenderModal(); }));
+}
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+loadStorage();
+render();
+</script>
+</body>
+</html>
