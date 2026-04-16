@@ -262,7 +262,17 @@
     .role-type.civil    { color:var(--civil-color); }
     .role-type.impostor { color:var(--impostor-color); }
     .role-word-label    { font-size:12px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
-    .role-word          { font-size:clamp(24px,7vw,30px); font-weight:900; }
+    .role-word-wrap {
+      width:100%; padding:18px 20px; border-radius:16px; text-align:center;
+      background:linear-gradient(135deg,rgba(255,255,255,0.07),rgba(167,139,250,0.1));
+      border:2px solid rgba(167,139,250,0.3);
+      box-shadow:0 4px 24px rgba(124,58,237,0.15);
+    }
+    .role-word          {
+      font-size:clamp(30px,9vw,46px); font-weight:900; letter-spacing:-0.5px;
+      background:linear-gradient(135deg,#f9fafb 30%,#c4b5fd 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
     .role-cat-label     { font-size:11px; color:var(--text-muted); margin-top:-4px; }
     .role-partners-label{ font-size:12px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
     .role-partners      { font-size:clamp(14px,4vw,16px); font-weight:700; color:#f87171; }
@@ -838,7 +848,7 @@ function renderReveal() {
         <div class="role-type civil" style="font-size:clamp(20px,5.5vw,26px)">CIVIL</div>
         ${catDisplay}
         <div class="role-word-label">Palabra:</div>
-        <div class="role-word">${escape(role.word)}</div>
+        <div class="role-word-wrap"><div class="role-word">${escape(role.word)}</div></div>
       </div>`
     : `<div class="role-card impostor">
         <div class="role-icon">🕵️</div>
