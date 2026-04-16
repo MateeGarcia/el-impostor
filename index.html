@@ -827,7 +827,10 @@ function renderReveal() {
 
   const catDisplay = S.showCategory && cat ? `
     <div class="role-word-label">Categoría</div>
-    <div style="font-size:clamp(13px,3.5vw,15px);color:var(--text-muted)">${cat.emoji} ${escape(cat.name)}</div>` : '';
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:12px;padding:10px 18px;margin-top:2px">
+      <span style="font-size:clamp(22px,6vw,28px)">${cat.emoji}</span>
+      <span style="font-size:clamp(16px,4.5vw,20px);font-weight:800;color:var(--text)">${escape(cat.name)}</span>
+    </div>` : '';
 
   const roleCard = isCivil
     ? `<div class="role-card civil">
@@ -844,7 +847,10 @@ function renderReveal() {
         <div class="role-type impostor">IMPOSTOR</div>
         ${S.showCategory && cat ? `
           <div class="role-word-label">Categoría</div>
-          <div style="font-size:clamp(13px,3.5vw,15px);color:var(--text-muted)">${cat.emoji} ${escape(cat.name)}</div>` : ''}
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:12px;padding:10px 18px;margin-top:2px">
+            <span style="font-size:clamp(22px,6vw,28px)">${cat.emoji}</span>
+            <span style="font-size:clamp(16px,4.5vw,20px);font-weight:800;color:var(--text)">${escape(cat.name)}</span>
+          </div>` : ''}
         <div class="role-word-label">No conocés la palabra</div>
         <div class="role-word" style="opacity:0.35;font-size:clamp(18px,5vw,22px)">¡Tenés que fingir!</div>
         ${role.partners.length>0?`
