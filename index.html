@@ -301,6 +301,19 @@
     .info-badge span { color:var(--text-muted); }
     .playing-how-to { width:100%; text-align:left; }
 
+    /* ─── FIRST PLAYER BANNER ──────────────────────── */
+    .first-player-banner {
+      width:100%; border-radius:20px; padding:18px 20px; text-align:center;
+      background:linear-gradient(135deg,rgba(124,58,237,0.18),rgba(219,39,119,0.14));
+      border:2px solid rgba(167,139,250,0.4);
+      box-shadow:0 6px 28px rgba(124,58,237,0.2);
+      animation:popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    .fpb-label  { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.2px; margin-bottom:12px; }
+    .fpb-player { display:flex; align-items:center; justify-content:center; gap:14px; }
+    .fpb-avatar { width:54px; height:54px; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+    .fpb-name   { font-size:clamp(22px,6.5vw,30px); font-weight:900; }
+
     /* ─── MODAL ────────────────────────────────────── */
     .modal-overlay {
       position:fixed; inset:0; background:rgba(0,0,0,0.72); backdrop-filter:blur(5px);
@@ -510,8 +523,9 @@ let S = {
   randomMode: false,
   customCategories: [],
   assignedRoles: [],
-  viewedPlayers: [],      // array of player indices who already saw their role
+  viewedPlayers: [],       // array of player indices who already saw their role
   activeRevealIndex: null, // which player is currently on the reveal screen
+  firstPlayerIndex: 0,     // randomly chosen player to go first
   revealState: 'hidden',
   modalOpen: false,
   modalMode: null,
@@ -898,8 +912,11 @@ function renderReveal() {
 // ─── PLAYING ───────────────────────────────────
 function renderPlaying() {
   const civilCount = S.playerCount - S.impostorCount;
-  const word = S.assignedRoles[0]?.word || '?';
   const cat  = catById(S.assignedRoles[0]?.categoryId);
+  const firstIdx  = S.firstPlayerIndex;
+  const firstName = playerName(firstIdx);
+  const firstColor = playerColor(firstIdx);
+  const firstEmoji = playerEmoji(firstIdx);
 
   return `<div class="screen">
     <div class="playing-screen">
@@ -908,6 +925,15 @@ function renderPlaying() {
       ${S.showCategory && cat
         ? `<div class="playing-subtitle">${cat.emoji} Categoría: <strong>${escape(cat.name)}</strong></div>`
         : `<div class="playing-subtitle" style="opacity:0.4">Categoría oculta</div>`}
+
+      <div class="first-player-banner">
+        <div class="fpb-label">🎲 Empieza primero</div>
+        <div class="fpb-player">
+          <div class="fpb-avatar" style="background:${firstColor}22;color:${firstColor}">${firstEmoji}</div>
+          <div class="fpb-name" style="color:${firstColor}">${escape(firstName)}</div>
+        </div>
+      </div>
+
       <div class="playing-info">
         <div class="info-badge">👥 ${S.playerCount} jugadores</div>
         <div class="info-badge">👮 ${civilCount} civil${civilCount!==1?'es':''}</div>
@@ -1054,7 +1080,10 @@ function attachEvents() {
   if (S.screen==='playerSelect') {
     on('btn-back','click',()=>{ S.screen='category'; render(); });
     on('btn-start-game','click',()=>{
-      if(S.viewedPlayers.length===S.playerCount){ S.screen='playing'; render(); }
+      if(S.viewedPlayers.length===S.playerCount){
+        S.firstPlayerIndex = Math.floor(Math.random() * S.playerCount);
+        S.screen='playing'; render();
+      }
     });
     document.querySelectorAll('[data-reveal]').forEach(el=>{
       el.addEventListener('click',()=>{
@@ -1085,7 +1114,7 @@ function attachEvents() {
       const r=S.assignedRoles[0]; const cat=catById(r?.categoryId);
       alert(`La palabra secreta era:\n\n"${r?.word||'?'}"\n${cat?`Categoría: ${cat.emoji} ${cat.name}`:''}`);
     });
-    on('btn-new-game','click',()=>{ S.screen='home'; S.assignedRoles=[]; S.viewedPlayers=[]; S.activeRevealIndex=null; S.revealState='hidden'; render(); });
+    on('btn-new-game','click',()=>{ S.screen='home'; S.assignedRoles=[]; S.viewedPlayers=[]; S.activeRevealIndex=null; S.firstPlayerIndex=0; S.revealState='hidden'; render(); });
   }
 
   // MODAL
