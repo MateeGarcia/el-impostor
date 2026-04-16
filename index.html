@@ -156,6 +156,15 @@
     }
     .player-input:focus { border-color:var(--accent); }
     .player-input::placeholder { color:var(--text-muted); }
+    .player-delete-btn {
+      width:34px; height:34px; flex-shrink:0; border-radius:10px;
+      border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.08);
+      color:#f87171; font-size:13px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:all 0.15s;
+    }
+    .player-delete-btn:hover  { background:rgba(239,68,68,0.2); border-color:rgba(239,68,68,0.5); }
+    .player-delete-btn:active { transform:scale(0.88); }
 
     /* ─── CATEGORY SCREEN ──────────────────────────── */
     .cat-toolbar {
@@ -617,6 +626,7 @@ function renderSetup() {
       <div class="player-avatar" style="background:${playerColor(i)}22;color:${playerColor(i)}">${playerEmoji(i)}</div>
       <input class="player-input" placeholder="Jugador ${i+1}" value="${escape(S.playerNames[i]||'')}"
         data-pi="${i}" id="pname-${i}" maxlength="20" inputmode="text" autocomplete="off">
+      ${S.playerCount > 3 ? `<button class="player-delete-btn" data-del-player="${i}" title="Eliminar jugador">✕</button>` : ''}
     </div>`).join('');
   return `<div class="screen">
     <div class="screen-header">
@@ -844,7 +854,7 @@ function renderReveal() {
   const roleCard = isCivil
     ? `<div class="role-card civil">
         <div class="role-icon">👮</div>
-        <div class="role-label">Tu rol</div>
+        <div class="role-label">Rol</div>
         <div class="role-type civil" style="font-size:clamp(20px,5.5vw,26px)">CIVIL</div>
         ${catDisplay}
         <div class="role-word-label">Palabra:</div>
@@ -977,6 +987,17 @@ function attachEvents() {
   if (S.screen==='setup') {
     on('btn-back','click',()=>{ S.screen='home'; render(); });
     on('dec-players','click',()=>{ if(S.playerCount>3){ S.playerCount--; S.playerNames=S.playerNames.slice(0,S.playerCount); S.impostorCount=Math.min(S.impostorCount,Math.floor(S.playerCount/2)); render(); } });
+    document.querySelectorAll('[data-del-player]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const idx=+btn.dataset.delPlayer;
+        // Save current input values first
+        document.querySelectorAll('.player-input').forEach(inp=>{ S.playerNames[+inp.dataset.pi]=inp.value; });
+        S.playerNames.splice(idx,1);
+        S.playerCount--;
+        S.impostorCount=Math.min(S.impostorCount,Math.max(1,Math.floor(S.playerCount/2)));
+        render();
+      });
+    });
     on('inc-players','click',()=>{ if(S.playerCount<20){ S.playerCount++; if(S.playerNames.length<S.playerCount) S.playerNames.push(''); render(); } });
     on('dec-imp','click',()=>{ if(S.impostorCount>1){ S.impostorCount--; render(); } });
     on('inc-imp','click',()=>{ const mx=Math.floor(S.playerCount/2); if(S.impostorCount<mx){ S.impostorCount++; render(); } });
