@@ -86,6 +86,21 @@
     .home-subtitle { font-size:clamp(13px,3.5vw,15px); color:var(--text-muted); max-width:280px; line-height:1.6; }
     .home-stat { font-size:12px; color:var(--text-muted); margin-top:6px; }
 
+    .btn-donate {
+      display:flex; align-items:center; gap:12px;
+      background:linear-gradient(135deg,rgba(0,116,209,0.12),rgba(0,158,227,0.08));
+      border:1.5px solid rgba(0,158,227,0.35); border-radius:16px;
+      padding:14px 18px; text-decoration:none; color:var(--text);
+      transition:all 0.2s; cursor:pointer;
+    }
+    .btn-donate:hover  { background:linear-gradient(135deg,rgba(0,116,209,0.22),rgba(0,158,227,0.15)); border-color:rgba(0,158,227,0.6); transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,116,209,0.2); }
+    .btn-donate:active { transform:scale(0.97); }
+    .btn-donate-icon   { font-size:26px; flex-shrink:0; }
+    .btn-donate-text   { flex:1; text-align:left; }
+    .btn-donate-title  { font-size:14px; font-weight:700; color:#38bdf8; }
+    .btn-donate-sub    { font-size:12px; color:var(--text-muted); margin-top:2px; }
+    .btn-donate-arrow  { font-size:18px; color:rgba(56,189,248,0.6); flex-shrink:0; }
+
     /* ─── BUTTONS ──────────────────────────────────── */
     .btn {
       display:flex; align-items:center; justify-content:center; gap:8px;
@@ -628,6 +643,14 @@ function renderHome() {
     </div>
     <div class="flex-col mt-auto">
       <button class="btn btn-primary" id="btn-play">🎮 Jugar</button>
+      <a class="btn-donate" href="https://link.mercadopago.com.ar/mateogarcia" target="_blank" rel="noopener">
+        <span class="btn-donate-icon">💙</span>
+        <div class="btn-donate-text">
+          <div class="btn-donate-title">La app es gratis</div>
+          <div class="btn-donate-sub">Si te gustó, podés invitarme un café ☕</div>
+        </div>
+        <span class="btn-donate-arrow">→</span>
+      </a>
     </div>
   </div>`;
 }
