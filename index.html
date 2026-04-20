@@ -316,6 +316,60 @@
     .info-badge span { color:var(--text-muted); }
     .playing-how-to { width:100%; text-align:left; }
 
+    /* ─── ENDGAME SCREEN ───────────────────────────── */
+    .endgame-screen { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; padding:8px 0; }
+
+    .endgame-title {
+      font-size:clamp(32px,9vw,44px); font-weight:900; letter-spacing:-1px;
+      background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .endgame-subtitle { font-size:clamp(13px,3.5vw,15px); color:var(--text-muted); margin-top:-12px; }
+
+    .endgame-word-block {
+      width:100%; border-radius:22px; padding:24px 20px;
+      background:linear-gradient(135deg,rgba(255,255,255,0.07),rgba(167,139,250,0.1));
+      border:2px solid rgba(167,139,250,0.35);
+      box-shadow:0 8px 32px rgba(124,58,237,0.2);
+      animation:popIn 0.45s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    .endgame-word-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; }
+    .endgame-word {
+      font-size:clamp(34px,10vw,52px); font-weight:900; letter-spacing:-1px;
+      background:linear-gradient(135deg,#f9fafb 30%,#c4b5fd 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .endgame-cat {
+      display:inline-flex; align-items:center; gap:8px; margin-top:12px;
+      background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15));
+      border:1.5px solid rgba(167,139,250,0.4); border-radius:12px;
+      padding:8px 16px;
+    }
+    .endgame-cat-emoji { font-size:20px; }
+    .endgame-cat-name  { font-size:clamp(13px,3.8vw,15px); font-weight:700;
+      background:linear-gradient(135deg,#a78bfa,#f472b6);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+
+    .endgame-impostors {
+      width:100%; border-radius:20px; overflow:hidden;
+      border:2px solid rgba(239,68,68,0.35);
+      background:linear-gradient(135deg,rgba(239,68,68,0.1),rgba(185,28,28,0.06));
+      animation:popIn 0.5s 0.1s cubic-bezier(0.175,0.885,0.32,1.275) both;
+    }
+    .endgame-impostors-header {
+      padding:12px 18px; font-size:12px; font-weight:700;
+      color:rgba(248,113,113,0.8); text-transform:uppercase; letter-spacing:1.2px;
+      border-bottom:1px solid rgba(239,68,68,0.2);
+    }
+    .endgame-impostor-row {
+      display:flex; align-items:center; gap:12px; padding:12px 18px;
+      border-bottom:1px solid rgba(239,68,68,0.1);
+    }
+    .endgame-impostor-row:last-child { border-bottom:none; }
+    .endgame-impostor-avatar { width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+    .endgame-impostor-name   { font-size:clamp(15px,4.2vw,17px); font-weight:700; flex:1; text-align:left; }
+    .endgame-impostor-badge  { font-size:11px; font-weight:700; color:#f87171; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:3px 8px; flex-shrink:0; }
+
     /* ─── FIRST PLAYER BANNER ──────────────────────── */
     .first-player-banner {
       width:100%; border-radius:20px; padding:18px 20px; text-align:center;
@@ -626,7 +680,7 @@ function assignRoles() {
 // ══════════════════════════════════════════════════
 function render() {
   const app = document.getElementById('app');
-  const screens = { home:renderHome, setup:renderSetup, category:renderCategory, playerSelect:renderPlayerSelect, reveal:renderReveal, playing:renderPlaying };
+  const screens = { home:renderHome, setup:renderSetup, category:renderCategory, playerSelect:renderPlayerSelect, reveal:renderReveal, playing:renderPlaying, endgame:renderEndgame };
   app.innerHTML = (screens[S.screen] || renderHome)();
   if (S.modalOpen) app.insertAdjacentHTML('beforeend', renderModal());
   attachEvents();
@@ -974,8 +1028,54 @@ function renderPlaying() {
       </div>
     </div>
     <div class="flex-col mt-16">
-      <button class="btn btn-secondary" id="btn-reveal-word">👁️ Revelar palabra secreta</button>
+      <button class="btn btn-secondary" id="btn-reveal-word">👁️ Revelar palabra y fin del juego</button>
       <button class="btn btn-ghost" id="btn-new-game">🔄 Nueva partida</button>
+    </div>
+  </div>`;
+}
+
+// ─── ENDGAME ────────────────────────────────────
+function renderEndgame() {
+  const role0   = S.assignedRoles[0];
+  const cat     = catById(role0?.categoryId);
+  const word    = role0?.word || '?';
+  const impostors = S.assignedRoles.filter(r => r.role === 'impostor');
+
+  const impostorRows = impostors.map(r => {
+    const i = r.playerIndex;
+    return `<div class="endgame-impostor-row">
+      <div class="endgame-impostor-avatar" style="background:${playerColor(i)}22;color:${playerColor(i)}">${playerEmoji(i)}</div>
+      <div class="endgame-impostor-name">${escape(playerName(i))}</div>
+      <div class="endgame-impostor-badge">IMPOSTOR</div>
+    </div>`;
+  }).join('');
+
+  const catBlock = cat ? `
+    <div class="endgame-cat">
+      <span class="endgame-cat-emoji">${cat.emoji}</span>
+      <span class="endgame-cat-name">${escape(cat.name)}</span>
+    </div>` : '';
+
+  return `<div class="screen">
+    <div class="endgame-screen">
+      <div style="font-size:clamp(54px,15vw,72px);animation:pulse 2s ease-in-out infinite">🎭</div>
+      <div class="endgame-title">Fin del juego</div>
+      <div class="endgame-subtitle">¿Quién logró engañar a todos?</div>
+
+      <div class="endgame-word-block">
+        <div class="endgame-word-label">La palabra secreta era</div>
+        <div class="endgame-word">${escape(word)}</div>
+        ${catBlock}
+      </div>
+
+      <div class="endgame-impostors">
+        <div class="endgame-impostors-header">🕵️ ${impostors.length === 1 ? 'El impostor era' : 'Los impostores eran'}</div>
+        ${impostorRows}
+      </div>
+    </div>
+
+    <div class="flex-col mt-16">
+      <button class="btn btn-primary" id="btn-new-game">🔄 Nueva partida</button>
     </div>
   </div>`;
 }
@@ -1133,10 +1233,12 @@ function attachEvents() {
 
   // PLAYING
   if (S.screen==='playing') {
-    on('btn-reveal-word','click',()=>{
-      const r=S.assignedRoles[0]; const cat=catById(r?.categoryId);
-      alert(`La palabra secreta era:\n\n"${r?.word||'?'}"\n${cat?`Categoría: ${cat.emoji} ${cat.name}`:''}`);
-    });
+    on('btn-reveal-word','click',()=>{ S.screen='endgame'; render(); });
+    on('btn-new-game','click',()=>{ S.screen='home'; S.assignedRoles=[]; S.viewedPlayers=[]; S.activeRevealIndex=null; S.firstPlayerIndex=0; S.revealState='hidden'; render(); });
+  }
+
+  // ENDGAME
+  if (S.screen==='endgame') {
     on('btn-new-game','click',()=>{ S.screen='home'; S.assignedRoles=[]; S.viewedPlayers=[]; S.activeRevealIndex=null; S.firstPlayerIndex=0; S.revealState='hidden'; render(); });
   }
 
